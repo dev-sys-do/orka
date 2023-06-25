@@ -9,8 +9,18 @@ message SchedulingRequest {
     // definition of the workload
 }
 
+enum SchedulingStatus {
+    SCHEDULED = 0;
+    // the request was malformed or safety checks failed
+    BAD_REQUEST = 1;
+    // no underlying agent could be contacted to schedule
+    NO_CONTACTABLE_AGENT = 2;
+    // all contacted agents refused the workload
+    AGENTS_REFUSED_OPERATION = 3;
+}
+
 message SchedulingResponse {
-    // whether the scheduling was successful
+    SchedulingStatus status = 1;
 }
 
 service SchedulingService {
