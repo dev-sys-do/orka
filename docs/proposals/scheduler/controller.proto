@@ -1,0 +1,18 @@
+syntax = "proto3";
+
+
+// ------------------
+// Scheduling
+// ------------------
+
+message SchedulingRequest {
+    // definition of the workload
+}
+
+message SchedulingResponse {
+    // whether the scheduling was successful
+}
+
+service SchedulingService {
+    rpc Schedule(SchedulingRequest) returns (SchedulingResponse);
+}
