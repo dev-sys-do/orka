@@ -1,0 +1,39 @@
+syntax = "proto3";
+
+
+// ------------------
+// Lifecycle
+// ------------------
+
+message ConnectionRequest {
+    // agent certificate here
+}
+
+message ConnectionResponse {
+    // whether the agent was accepted or not
+}
+
+service LifecycleService {
+    rpc Connect(ConnectionRequest) returns (ConnectionResponse);
+    rpc Disconnect() returns ();
+}
+
+
+// ------------------
+// Status updates
+// ------------------
+
+message NodeStatusUpdateNotification {
+    // update about the node status
+    // such as amount of RAM, CPU, etc.
+}
+
+message InstanceStatusUpdateNotification {
+    // update about instances hosted on the node
+    // such as number of instances down, to reschedule, etc.
+}
+
+service StatusUpdateService {
+    rpc NodeStatus(NodeStatusUpdateNotification) returns ();
+    rpc InstanceStatus(InstanceStatusUpdateNotification) returns ();
+}
