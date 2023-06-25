@@ -1,5 +1,7 @@
 syntax = "proto3";
 
+message Empty {}
+
 
 // ------------------
 // Lifecycle
@@ -9,8 +11,13 @@ message ConnectionRequest {
     // agent certificate here
 }
 
+enum ConnectionStatus {
+    GRANTED = 0;
+    DENIED = 1;
+}
+
 message ConnectionResponse {
-    // whether the agent was accepted or not
+    ConnectionStatus status = 1;
 }
 
 service LifecycleService {
@@ -34,6 +41,6 @@ message InstanceStatusUpdateNotification {
 }
 
 service StatusUpdateService {
-    rpc NodeStatus(NodeStatusUpdateNotification) returns ();
-    rpc InstanceStatus(InstanceStatusUpdateNotification) returns ();
+    rpc NodeStatus(NodeStatusUpdateNotification) returns (Empty);
+    rpc InstanceStatus(InstanceStatusUpdateNotification) returns (Empty);
 }
