@@ -32,20 +32,5 @@ Communicating with anything other than CLI, Scheduler and database
 
 ## API
 
-Task: Specify the cluster v0 HTTP API (OpenAPI 3.0 compliant)
-**POST** /api/v0/workloads ?
-Create a workload (only one workload type for now)
-**GET** /api/v0/workloads/:id
-Get a workload by id
-**DELETE** /api/v0/workloads/:id
-Delete a workload by id
-**GET** /api/v0/workloads/all
-List all workloads
-**POST** /api/v0/instances
-Create, get and delete workload instances
-**GET** /api/v0/instances/:id
-Get an instance by id
-**DELETE** /api/v0/instances/:id
-Delete an instance by id
-**GET** /api/v0/instances/all
-List all instances
+**CLI API Schema** (OpenAPI 3.0 compliant): [api_definition](./api_definition.yaml)
+**Scheduler proto file**: [scheduler.proto](./scheduler.proto)
