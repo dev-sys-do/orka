@@ -1,0 +1,18 @@
+syntax = "proto3";
+
+
+// ------------------
+// State Update
+// ------------------
+
+message StatusUpdateRequest {
+    // new cluster state
+}
+
+message StatusUpdateResponse {
+    // request scheduling workload
+}
+
+service StatusUpdateService {
+    rpc StatusUpdate(StatusUpdateRequest) returns (StatusUpdateResponse);
+}
