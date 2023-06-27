@@ -8,7 +8,7 @@ HTTP API (OpenAPI 3.0 compliant) to connect with CLI
 gRPC client and API for the scheduler
 DATABASE access and control
 
-## Scope
+### Scope
 
 The Cluster Controller is responsible for:
 Receiving requests from the CLI (Controller External API)
@@ -32,5 +32,7 @@ Communicating with anything other than CLI, Scheduler and database
 
 ## API
 
-**CLI API Schema** (OpenAPI 3.0 compliant): [api_definition](./api_definition.yaml)
-**Scheduler proto file**: [scheduler.proto](./scheduler.proto)
+- External API: A RESTful API which accepts CLI's HTTP requests.
+  [api_definition](./api_definition.yaml)
+- Internal API: A gRPC API accepting requests from scheduler (allows scheduler to inform controller about state changes).
+  [scheduler.proto](./scheduler.proto)
