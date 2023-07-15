@@ -6,7 +6,6 @@ The Cluster Controller is an intermediary between the client and scheduler, its 
 
 HTTP API (OpenAPI 3.0 compliant) to connect with CLI
 gRPC client and API for the scheduler
-DATABASE access and control
 
 ### Scope
 
