@@ -10,20 +10,21 @@ gRPC client and API for the scheduler
 ### Scope
 
 The Cluster Controller is responsible for:
-Receiving requests from the CLI (Controller External API)
-Receive updates on the instances status from scheduler (Controller Internal API)
-Store current cluster state in the database
-Constantly compare current state with the state requested by client
-Make requests to scheduler based on the comparison results
+
+- Receiving requests from the CLI (Controller External API)
+
+- Receive updates on the instances status from scheduler (Controller Internal API)
+- Store current cluster state in the database
+- Compare current state with the requested one when an update request is received from a client or when the schedular reports a change in the cluster state.
+- Make requests to scheduler based on the comparison results
 
 ### Out of scope
 
 The Cluster Controller is NOT responsible for:
-Scheduling instances
-Handling connection with agents
-Communicating with anything other than CLI, Scheduler and database
 
-…
+- Scheduling instances
+- Handling connection with agents
+- Communicating with anything other than CLI, Scheduler and database
 
 ## Architecture
 
