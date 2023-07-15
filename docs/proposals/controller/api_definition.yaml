@@ -53,16 +53,16 @@ paths:
         type: string
   /instance:
     get:
-      summary: Returns a list of all instances.
+      summary: Returns a list of all instances ids.
       responses:
         '200':
-          description: A JSON array of istance state objects
+          description: A JSON array of instances ids
           content:
             application/json:
               schema:
                 type: array
                 items:
-                  $ref: '#/components/schemas/ShortState'
+                  type: string
     post:
       summary: Creates an instance based on an existing workload id
       requestBody:
@@ -80,14 +80,14 @@ paths:
           description: Couldn't create an instance based on the workload file
   /instance/{id}:
     get:
-      summary: Returns a single instance by id.
+      summary: Returns a single instance status by id.
       responses:
         '200':
           description: An instance state object
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/LongState'
+                $ref: '#/components/schemas/InstanceStatus'
     delete:
       summary: Deletes an instance by id
       responses:
@@ -135,22 +135,7 @@ components:
           - image
       required:
       - workload
-    ShortState:
-      type: object
-      properties:
-        id:
-          type: string
-        name:
-          type: string
-        ready:
-          type: boolean
-        status:
-          type: string
-        restarts:
-          type: integer
-        age:
-          type: string
-    LongState:
+    InstanceStatus:
       type: object
       properties:
         id:
