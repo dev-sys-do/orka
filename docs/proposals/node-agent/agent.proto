@@ -1,0 +1,57 @@
+syntax = "proto3";
+
+package node_agent;
+
+enum Signal {
+    STOP = 0;
+    KILL = 1;
+}
+
+enum Status {
+    WAITING = 0;
+    RUNNING = 1;
+    TERMINATED = 2;
+}
+
+enum Type {
+    CONTAINER = 0;
+}
+
+message Resource {
+    ResourceDetails limit = 1;
+    ResourceDetails usage = 2;
+}
+
+message ResourceDetails {
+    int32 cpu = 1;
+    int32 memory = 2;
+    int32 disk = 3;
+}
+
+message Workload {
+    string id = 1;
+    string name = 2;
+    Type type = 3;
+    string image = 4;
+    repeated string environment = 6;
+    Resource resource = 7;
+}
+
+message WorkloadStatus {
+    int32 id = 1;
+    Status status = 2;
+    Resource resource = 3;
+    string message = 4;
+}
+
+message Empty {}
+
+message WorkloadSignal {
+    Workload workload = 1;
+    Signal signal = 2;
+}
+
+service WorkloadService {
+    rpc Create (Workload) returns (stream WorkloadStatus) {}
+    rpc Signal (WorkloadSignal) returns (Empty) {}
+}
