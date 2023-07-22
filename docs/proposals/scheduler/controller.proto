@@ -5,22 +5,44 @@ syntax = "proto3";
 // Scheduling
 // ------------------
 
-message SchedulingRequest {
-    // definition of the workload
+message Workload {
+    enum Type {
+        CONTAINER = 0;
+    }
+
+    message Resources {
+        int32 cpu = 1;
+        int32 memory = 2;
+        int32 disk = 3;
+    }
+
+    string id = 1;
+    string name = 2;
+    Type type = 3;
+    string image = 4;
+    repeated string environment = 5;
+    Resources resource_limits = 6;
 }
 
-enum SchedulingStatus {
-    SCHEDULED = 0;
-    // the request was malformed or safety checks failed
-    BAD_REQUEST = 1;
-    // no underlying agent could be contacted to schedule
-    NO_CONTACTABLE_AGENT = 2;
-    // all contacted agents refused the workload
-    AGENTS_REFUSED_OPERATION = 3;
+message SchedulingRequest {
+    Workload workload = 1;
 }
 
 message SchedulingResponse {
-    SchedulingStatus status = 1;
+    enum StatusCode {
+        SCHEDULED = 0;
+        SCHEDULING = 1;
+        REJECTED = 2;
+    }
+
+    enum RejectionReason {
+        BAD_REQUEST = 0;
+        NO_CONTACTABLE_AGENT = 1;
+        AGENTS_REFUSED_OPERATION = 2;
+    }
+
+    StatusCode status_code = 1;
+    optional RejectionReason rejection_reason = 2;
 }
 
 service SchedulingService {
