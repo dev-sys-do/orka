@@ -5,31 +5,29 @@
 
 ### Service provided
 
-The Scheduler is responsible for the scheduling of nodes and workloads.
+The Scheduler is responsible for scheduling workloads across the cluster nodes.
 It is the interface between the Controller and the Agent.
 
 ### Scope
 
-The Scheduler is reponsible for:
+The Scheduler is responsible for:
 
 - Sending workload scheduling/re-scheduling
-    - Re-scheduling can happen upon Agent disconnection
 - Nodes and Workload Instances status updates
-    - received from the Agents
-    - sent to the Controller
+    - Received from the Agents
+    - Sent to the Controller
 - Handling of Agent connection
-    - the Scheduler is responsible for the handshake
-    - secure connection should be made between Agent and Scheduler
+    - The Scheduler is responsible for accepting new connections
+    - Secure connection must be made between Agent and Scheduler
 
-The Scheduler is NOT responsible for:
+### Out of Scope
 
 - Workload management (creation/update/deletion)
 - Node management (connection/disconnection)
-    - the Scheduler is only receiving status updates
-    - the Agent is responsible for its connection and disconnection to the Scheduler
+    - The Scheduler is only receiving status updates
+    - The Agent is responsible for connecting to and disconnecting from the Scheduler
 - Rescheduling workloads automatically in case of an Agent disconnection
-    - this is the Controller's responsbility
-    - the Controller needs to call the Scheduler with a reschedule order
+    - Workload lifecycle management is the Controller's responsibility
 
 
 ## High Level Architecture
@@ -135,7 +133,7 @@ sequenceDiagram
 
 ## API
 
-The Scheduler is interactable through gRPC. It exposes two APIs: the Controller side, and the Agent side.
+The Scheduler can be interacted with using gRPC. It exposes two APIs: the Controller side, and the Agent side.
 
 Each API is defined in its gRPC `.proto` file:
 
