@@ -8,21 +8,21 @@ message Empty {}
 // ------------------
 
 message ConnectionRequest {
-    // agent certificate here
-}
-
-enum ConnectionStatus {
-    GRANTED = 0;
-    DENIED = 1;
+    string uuid = 1;
 }
 
 message ConnectionResponse {
-    ConnectionStatus status = 1;
+    enum StatusCode {
+        GRANTED = 0;
+        DENIED = 1;
+    }
+
+    StatusCode status_code = 1;
 }
 
 service LifecycleService {
     rpc Connect(ConnectionRequest) returns (ConnectionResponse);
-    rpc Disconnect() returns ();
+    rpc Disconnect(Empty) returns (Empty);
 }
 
 
@@ -30,17 +30,44 @@ service LifecycleService {
 // Status updates
 // ------------------
 
-message NodeStatusUpdateNotification {
-    // update about the node status
-    // such as amount of RAM, CPU, etc.
+message NodeStatus {
+    message Memory {
+        uint64 total = 1;
+        uint64 free = 2;
+    }
+
+    message CpuLoad {
+        double load = 1;
+    }
+
+    Memory memory = 1;
+    CpuLoad cpu_load = 2;
 }
 
-message InstanceStatusUpdateNotification {
-    // update about instances hosted on the node
-    // such as number of instances down, to reschedule, etc.
+message InstanceStatus {
+    enum StatusCode {
+        WAITING = 0;
+        RUNNING = 1;
+        TERMINATED = 2;
+    }
+
+    message Resources {
+        int32 cpu = 1;
+        int32 memory = 2;
+        int32 disk = 3;
+    }
+
+    string id = 1;
+    StatusCode status_code = 2;
+    Resources resource_usage = 3;
+    string message = 4;
+}
+
+message InstanceStatuses {
+    repeated InstanceStatus instance_statuses = 1;
 }
 
 service StatusUpdateService {
-    rpc NodeStatus(NodeStatusUpdateNotification) returns (Empty);
-    rpc InstanceStatus(InstanceStatusUpdateNotification) returns (Empty);
+    rpc UpdateNodeStatus(NodeStatus) returns (Empty);
+    rpc UpdateInstanceStatuses(InstanceStatuses) returns (Empty);
 }
