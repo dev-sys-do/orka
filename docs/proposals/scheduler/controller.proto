@@ -11,9 +11,9 @@ message Workload {
     }
 
     message Resources {
-        int32 cpu = 1;
-        int32 memory = 2;
-        int32 disk = 3;
+        optional int32 cpu = 1;
+        optional int32 memory = 2;
+        optional int32 disk = 3;
     }
 
     string id = 1;
@@ -21,7 +21,7 @@ message Workload {
     Type type = 3;
     string image = 4;
     repeated string environment = 5;
-    Resources resource_limits = 6;
+    optional Resources resource_limits = 6;
 }
 
 message SchedulingRequest {
