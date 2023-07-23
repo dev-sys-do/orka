@@ -57,7 +57,7 @@ message InstanceStatus {
         int32 disk = 3;
     }
 
-    string id = 1;
+    string name = 1;
     StatusCode status_code = 2;
     Resources resource_usage = 3;
     string message = 4;
