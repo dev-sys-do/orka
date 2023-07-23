@@ -16,12 +16,11 @@ message Workload {
         optional int32 disk = 3;
     }
 
-    string id = 1;
-    string name = 2;
-    Type type = 3;
-    string image = 4;
-    repeated string environment = 5;
-    optional Resources resource_limits = 6;
+    string name = 1;
+    Type type = 2;
+    string image = 3;
+    repeated string environment = 4;
+    optional Resources resource_limits = 5;
 }
 
 message SchedulingRequest {
