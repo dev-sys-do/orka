@@ -68,6 +68,6 @@ message InstanceStatuses {
 }
 
 service StatusUpdateService {
-    rpc UpdateNodeStatus(NodeStatus) returns (Empty);
+    rpc UpdateNodeStatus(stream NodeStatus) returns (Empty);
     rpc UpdateInstanceStatuses(InstanceStatuses) returns (Empty);
 }
