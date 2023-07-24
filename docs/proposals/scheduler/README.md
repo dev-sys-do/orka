@@ -12,7 +12,7 @@ It is the interface between the Controller and the Agent.
 
 The Scheduler is responsible for:
 
-- Sending workload scheduling/re-scheduling
+- Scheduling and re-scheduling `orka` workloads
 - Nodes and Workload Instances status updates
     - Received from the Agents
     - Sent to the Controller
