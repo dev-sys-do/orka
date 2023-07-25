@@ -8,7 +8,7 @@ message Empty {}
 // ------------------
 
 message ConnectionRequest {
-    string uuid = 1;
+    string id = 1;
 }
 
 message ConnectionResponse {
@@ -44,30 +44,6 @@ message NodeStatus {
     CpuLoad cpu_load = 2;
 }
 
-message InstanceStatus {
-    enum StatusCode {
-        WAITING = 0;
-        RUNNING = 1;
-        TERMINATED = 2;
-    }
-
-    message Resources {
-        int32 cpu = 1;
-        int32 memory = 2;
-        int32 disk = 3;
-    }
-
-    string name = 1;
-    StatusCode status_code = 2;
-    Resources resource_usage = 3;
-    string message = 4;
-}
-
-message InstanceStatuses {
-    repeated InstanceStatus instance_statuses = 1;
-}
-
 service StatusUpdateService {
     rpc UpdateNodeStatus(stream NodeStatus) returns (Empty);
-    rpc UpdateInstanceStatuses(InstanceStatuses) returns (Empty);
 }

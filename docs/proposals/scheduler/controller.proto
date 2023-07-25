@@ -44,6 +44,25 @@ message SchedulingResponse {
     optional RejectionReason rejection_reason = 2;
 }
 
+message WorkloadStatus {
+    enum StatusCode {
+        WAITING = 0;
+        RUNNING = 1;
+        TERMINATED = 2;
+    }
+
+    message Resources {
+        int32 cpu = 1;
+        int32 memory = 2;
+        int32 disk = 3;
+    }
+
+    string name = 1;
+    StatusCode status_code = 2;
+    Resources resource_usage = 3;
+    string message = 4;
+}
+
 service SchedulingService {
-    rpc Schedule(SchedulingRequest) returns (SchedulingResponse);
+    rpc Schedule(SchedulingRequest) returns (stream WorkloadStatus);
 }
