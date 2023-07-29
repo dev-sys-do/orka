@@ -24,7 +24,7 @@ The Cluster Controller is NOT responsible for:
 
 - Scheduling instances
 - Handling connection with agents
-- Communicating with anything other than CLI, Scheduler and database
+- Communicating with anything else than the CLI and the Scheduler
 
 ## Architecture
 
