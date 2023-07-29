@@ -15,7 +15,7 @@ The Cluster Controller is responsible for:
 
 - Receive updates on the instances status from scheduler (Controller Internal API)
 - Store current cluster state in the database
-- Compare current state with the requested one when an update request is received from a client or when the schedular reports a change in the cluster state.
+- Compare current state with the requested one when an update request is received from a client or when the scheduler reports a change in the cluster state.
 - Make requests to scheduler based on the comparison results
 
 ### Out of scope
