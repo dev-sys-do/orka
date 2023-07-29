@@ -52,7 +52,7 @@ sequenceDiagram
 
 ## API
 
-- External API: A RESTful API which accepts CLI's HTTP requests.
+- External API: A RESTful, HTTP-based API.
   [api_definition](./api_definition.yaml)
 - Internal API: A gRPC API accepting requests from scheduler (allows scheduler to inform controller about state changes).
   [scheduler.proto](./scheduler.proto)
