@@ -7,7 +7,7 @@ servers:
 - url: http://<api-link>/v0
   description: Main API server
 paths:
-  /workload:
+  /workloads:
     get:
       summary: Returns a list of workloads.
       responses:
@@ -29,7 +29,7 @@ paths:
           description: Created
         '400':
           description: Yaml description file is invalid
-  /workload/{id}:
+  /workloads/{id}:
     get:
       summary: Returns a single workload by id.
       responses:
@@ -51,7 +51,7 @@ paths:
       required: true
       schema:
         type: string
-  /instance:
+  /instances:
     get:
       summary: Returns a list of all instances ids.
       responses:
@@ -78,7 +78,7 @@ paths:
           description: Created
         '400':
           description: Couldn't create an instance based on the workload file
-  /instance/{id}:
+  /instances/{id}:
     get:
       summary: Returns a single instance status by id.
       responses:
