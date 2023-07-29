@@ -1,0 +1,45 @@
+syntax = "proto3";
+package orkascheduler;
+
+message Workload {
+    enum Type {
+        CONTAINER = 0;
+    }
+
+    message Resources {
+        optional int32 cpu = 1;
+        optional int32 memory = 2;
+        optional int32 disk = 3;
+    }
+
+    string name = 1;
+    Type type = 2;
+    string image = 3;
+    repeated string environment = 4;
+    optional Resources resource_limits = 5;
+}
+
+message SchedulingRequest {
+    Workload workload = 1;
+}
+
+message SchedulingResponse {
+    enum StatusCode {
+        SCHEDULED = 0;
+        SCHEDULING = 1;
+        REJECTED = 2;
+    }
+
+    enum RejectionReason {
+        BAD_REQUEST = 0;
+        NO_CONTACTABLE_AGENT = 1;
+        AGENTS_REFUSED_OPERATION = 2;
+    }
+
+    StatusCode status_code = 1;
+    optional RejectionReason rejection_reason = 2;
+}
+
+service SchedulingService {
+    rpc Schedule(SchedulingRequest) returns (SchedulingResponse);
+}
