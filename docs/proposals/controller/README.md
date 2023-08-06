@@ -12,11 +12,8 @@ gRPC client and API for the scheduler
 The Cluster Controller is responsible for:
 
 - Receiving requests from the CLI (Controller External API)
-
 - Receiving instances status updates from the scheduler (Controller Internal API)
 - Storing the cluster state
-- Comparing instances and nodes states with the requested one when an update request is received from a client or when the scheduler reports a change in the cluster state.
-- Make requests to scheduler based on the comparison results
 
 ### Out of scope
 
