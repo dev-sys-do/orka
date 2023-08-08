@@ -10,6 +10,8 @@ use crate::workload_manager::namespace::error::NamespaceClientError;
 
 use anyhow::Result;
 
+use super::error::ContainerClientError;
+
 pub struct ContainerClient {
     sock_path: String,
 }
@@ -36,7 +38,7 @@ impl ContainerClient {
 
     pub async fn new(sock_path: &str) -> Result<Self> {
         let _ = connect(sock_path.clone()).await.map_err(|_| {
-            NamespaceClientError::ContainerdSocketNotFound {
+            ContainerClientError::ContainerdSocketNotFound {
                 sock_path: sock_path.to_string(),
             }
         })?;

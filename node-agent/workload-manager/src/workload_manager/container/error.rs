@@ -9,6 +9,6 @@ pub enum ContainerClientError {
     AlreadyExists { container_id: String },
     #[error("Container {container_id:?} not found")]
     NotFound { container_id: String },
-    #[error("Unkown error occured {error:?}")]
+    #[error("Unknown error occured {error:?}")]
     Unknown { error: Status },
 }
