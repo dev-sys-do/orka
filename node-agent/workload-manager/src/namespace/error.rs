@@ -9,6 +9,6 @@ pub enum NamespaceClientError {
     AlreadyExists { namespace: String },
     #[error("Namespace {namespace:?} not found")]
     NotFound { namespace: String },
-    #[error("Unkown error occured {error:?}")]
+    #[error("Unknown error occured {error:?}")]
     Unknown { error: Status },
 }

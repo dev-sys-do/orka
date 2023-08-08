@@ -6,8 +6,6 @@ use containerd_client::{
 };
 use tonic::transport::Channel;
 
-use crate::workload_manager::namespace::error::NamespaceClientError;
-
 use anyhow::Result;
 
 use super::error::ContainerClientError;
@@ -19,7 +17,7 @@ pub struct ContainerClient {
 impl ContainerClient {
     async fn get_channel(&self) -> Result<Channel> {
         let channel = connect(self.sock_path.clone()).await.map_err(|_| {
-            NamespaceClientError::ContainerdSocketNotFound {
+            ContainerClientError::ContainerdSocketNotFound {
                 sock_path: self.sock_path.clone(),
             }
         })?;
