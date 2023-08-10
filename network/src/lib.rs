@@ -1,4 +1,4 @@
-mod cni_config;
+mod cni;
 
 pub fn add() {
     todo!()

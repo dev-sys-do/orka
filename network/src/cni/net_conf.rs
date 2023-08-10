@@ -1,7 +1,7 @@
 use ipnet::Ipv4Net;
 use serde::{Deserialize, Serialize};
 
-/// inspired by:
+/// see:
 /// [cni/pkg/types/types.go](https://github.com/containernetworking/cni/blob/f6506e215fb27ffbd9b46d9d18aae29dba697a52/pkg/types/types.go#L60)
 
 #[derive(Default, Deserialize, Serialize)]
