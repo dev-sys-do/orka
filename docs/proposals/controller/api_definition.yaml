@@ -1,0 +1,162 @@
+openapi: 3.0.0
+info:
+  title: Cluster Controller API
+  description: External API to send requests to the controller.
+  version: 0.1.0
+servers:
+- url: http://<api-link>/v0
+  description: Main API server
+paths:
+  /workloads:
+    get:
+      summary: Returns a list of workloads.
+      responses:
+        '200':
+          description: A JSON array of workload description objects
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Workload'
+    post:
+      summary: Creates a workload (only container workload type for now)
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Workload'
+      responses:
+        '201':
+          description: Created
+        '400':
+          description: Yaml description file is invalid
+  /workloads/{id}:
+    get:
+      summary: Returns a single workload by id.
+      responses:
+        '200':
+          description: A workload description file
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Workload'
+    delete:
+      summary: Deletes a workload by id
+      responses:
+        '204':
+          description: Deleted
+    parameters:
+    - name: id
+      in: path
+      description: ID of a workload
+      required: true
+      schema:
+        type: string
+  /instances:
+    get:
+      summary: Returns a list of all instances ids.
+      responses:
+        '200':
+          description: A JSON array of instances ids
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: string
+    post:
+      summary: Creates an instance based on an existing workload id
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                workload-id:
+                  type: string
+      responses:
+        '201':
+          description: Created
+        '400':
+          description: Couldn't create an instance based on the workload file
+  /instances/{id}:
+    get:
+      summary: Returns a single instance status by id.
+      responses:
+        '200':
+          description: An instance state object
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InstanceStatus'
+    delete:
+      summary: Deletes an instance by id
+      responses:
+        '204':
+          description: Deleted
+    parameters:
+    - name: id
+      in: path
+      description: ID of a workload
+      required: true
+      schema:
+        type: string
+components:
+  schemas:
+    Workload:
+      type: object
+      properties:
+        version:
+          type: string
+        workload:
+          type: object
+          properties:
+            kind:
+              type: string
+            name:
+              type: string
+            environment:
+              type: array
+              items:
+                type: object
+                additionalProperties: true
+            registry:
+              type: string
+            image:
+              type: string
+            port:
+              type: string
+            networks:
+              type: array
+              items:
+                type: string
+          required:
+          - kind
+          - name
+          - image
+      required:
+      - workload
+    InstanceStatus:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        workload_id:
+          type: string
+        workload_name:
+          type: string
+        start_time:
+          type: string
+        ready:
+          type: boolean
+        status:
+          type: string
+        restarts:
+          type: integer
+        IP:
+          type: string
+        port:
+          type: string
+        host_port:
+          type: string
