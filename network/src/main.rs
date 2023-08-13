@@ -1,42 +1,30 @@
-use orka_cni::cni::{
-    error::{CniError, CniErrorCode},
-    method::CniMethod,
-};
-use std::{process, str::FromStr};
+use cni_plugin::Cni;
 
 fn main() {
-    // we don't return Err(CniError) in main()
-    // because it uses the debug trait instead of Display
-    if let Err(e) = run() {
-        eprintln!("{}", e);
-        process::exit(1)
-    }
-}
+    cni_plugin::logger::install("./orka-cni.log");
 
-fn run() -> Result<(), CniError> {
-    let method = std::env::var("CNI_METHOD")
-        .map(|str| CniMethod::from_str(&str))
-        .map_err(|_| {
-            CniError::new(
-                Some(CniErrorCode::InvalidEnvironmentVariables),
-                "Missing CNI_METHOD environment variable",
-                None,
-            )
-        })?
-        .map_err(|_| {
-            CniError::new(
-                Some(CniErrorCode::InvalidEnvironmentVariables),
-                "Invalid CNI_METHOD environment variable",
-                None,
-            )
-        })?;
-
-    match method {
-        CniMethod::Add => orka_cni::add(),
-        CniMethod::Delete => orka_cni::delete(),
-        CniMethod::Check => orka_cni::check(),
-        CniMethod::Version => orka_cni::version(),
-    }?;
-
-    Ok(())
+    let tre = match Cni::load() {
+        Cni::Add {
+            container_id,
+            ifname,
+            netns,
+            path,
+            config,
+        } => orka_cni::add(),
+        Cni::Del {
+            container_id,
+            ifname,
+            netns,
+            path,
+            config,
+        } => orka_cni::delete(),
+        Cni::Check {
+            container_id,
+            ifname,
+            netns,
+            path,
+            config,
+        } => orka_cni::check(),
+        Cni::Version(_) => unreachable!(),
+    };
 }

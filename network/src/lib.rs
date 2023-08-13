@@ -1,6 +1,4 @@
-pub mod cni;
-
-use cni::error::CniError;
+use cni_plugin::error::CniError;
 
 pub fn add() -> Result<(), CniError> {
     println!("ADD method");
