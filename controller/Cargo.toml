@@ -8,6 +8,9 @@ tonic = "0.9"
 prost = "0.11"
 tokio = { version = "1", features = ["full"] }
 axum = "0.6.19"
+tokio-stream = "0.1.6"
+pretty_env_logger = "0.5.0"
+log = "0.4.20"
 
 [build-dependencies]
 tonic-build = "0.9"
@@ -16,7 +19,4 @@ tonic-build = "0.9"
 name= "server"
 path= "src/server.rs"
 
-[[bin]]
-name= "client"
-path= "src/client.rs"
 

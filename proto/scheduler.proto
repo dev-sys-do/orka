@@ -1,5 +1,10 @@
 syntax = "proto3";
+
 package orkascheduler;
+
+// ------------------
+// Scheduling
+// ------------------
 
 message Workload {
     enum Type {
@@ -23,23 +28,26 @@ message SchedulingRequest {
     Workload workload = 1;
 }
 
-message SchedulingResponse {
+
+message WorkloadStatus {
     enum StatusCode {
-        SCHEDULED = 0;
-        SCHEDULING = 1;
-        REJECTED = 2;
+        WAITING = 0;
+        RUNNING = 1;
+        TERMINATED = 2;
     }
 
-    enum RejectionReason {
-        BAD_REQUEST = 0;
-        NO_CONTACTABLE_AGENT = 1;
-        AGENTS_REFUSED_OPERATION = 2;
+    message Resources {
+        int32 cpu = 1;
+        int32 memory = 2;
+        int32 disk = 3;
     }
 
-    StatusCode status_code = 1;
-    optional RejectionReason rejection_reason = 2;
+    string name = 1;
+    StatusCode status_code = 2;
+    Resources resource_usage = 3;
+    string message = 4;
 }
 
 service SchedulingService {
-    rpc Schedule(SchedulingRequest) returns (SchedulingResponse);
+    rpc Schedule(SchedulingRequest) returns (stream WorkloadStatus);
 }

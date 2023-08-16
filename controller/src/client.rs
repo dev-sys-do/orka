@@ -1,27 +1,35 @@
+use log::trace;
 use scheduler::scheduling_service_client::SchedulingServiceClient;
-use scheduler::{SchedulingRequest, Workload};
+use scheduler::SchedulingRequest;
+use tonic::transport::Channel;
 
 pub mod scheduler {
     tonic::include_proto!("orkascheduler");
 }
 
-#[tokio::main]
-async fn main() -> Result<(), Box<dyn std::error::Error>> {
-    let mut client = SchedulingServiceClient::connect("http://[::1]:50051").await?;
+pub struct Client {
+    client: SchedulingServiceClient<Channel>,
+}
 
-    let mut workload = Workload::default();
-    workload.name = "Mon_Workload".to_string();
-    workload.image = "mon_image".to_string();
-    workload.environment.push("variable1=valeur1".to_string());
-    workload.environment.push("variable3=valeur3".to_string());
+impl Client {
+    pub async fn new() -> Result<Self, Box<dyn std::error::Error>> {
+        let client = SchedulingServiceClient::connect("http://[::1]:50051").await?;
+        Ok(Self { client })
+    }
 
-    let request = SchedulingRequest {
-        workload: Some(workload),
-    };
+    pub async fn schedule_workload(
+        &mut self,
+        scheduling_request: SchedulingRequest,
+    ) -> Result<(), Box<dyn std::error::Error>> {
+        let request = scheduling_request;
 
-    let response = client.schedule(request).await?;
+        let response = self.client.schedule(request).await?;
 
-    println!("RESPONSE={:?}", response);
+        let mut stream = response.into_inner();
 
-    Ok(())
+        while let Some(status) = stream.message().await? {
+            trace!("STATUS={:?}", status);
+        }
+        Ok(())
+    }
 }
