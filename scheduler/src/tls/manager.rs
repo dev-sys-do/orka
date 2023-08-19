@@ -3,9 +3,9 @@
 use std::{fs::File, io::Write};
 
 use anyhow::{Context, Result};
-use log::{debug, info};
 use rcgen::{Certificate, CertificateParams, DistinguishedName, DnType};
 use time::{Duration, OffsetDateTime};
+use tracing::{event, Level};
 
 use super::config::TlsConfig;
 
@@ -49,7 +49,7 @@ impl TlsManager {
         match self.read_secrets() {
             Ok(_) => return Ok(()),
             Err(e) => {
-                debug!("Failed to read TLS secrets from disk");
+                event!(Level::DEBUG, "Failed to read TLS secrets from disk");
 
                 // If TLS secret generation is disabled, there's nothing more we can do
                 if !self.config.can_generate_secrets() {
@@ -59,7 +59,10 @@ impl TlsManager {
         }
 
         // If we weren't successful in reading the secrets from the disk, try generating them
-        info!("Generating certificate and private key for TLS");
+        event!(
+            Level::INFO,
+            "Generating certificate and private key for TLS"
+        );
 
         self.generate_secrets()
             .with_context(|| "Unable to generate the TLS secrets")?;
@@ -81,9 +84,10 @@ impl TlsManager {
         let cert_file_path = tls_paths.cert_file();
         let private_key_file_path = tls_paths.private_key_file();
 
-        debug!(
-            "Reading certificate file for TLS from: {}",
-            cert_file_path.display()
+        event!(
+            Level::DEBUG,
+            path = %cert_file_path.display(),
+            "Reading certificate file for TLS"
         );
         let cert_data = std::fs::read_to_string(cert_file_path).with_context(|| {
             format!(
@@ -92,9 +96,10 @@ impl TlsManager {
             )
         })?;
 
-        debug!(
-            "Reading key file for TLS from: {}",
-            private_key_file_path.display()
+        event!(
+            Level::DEBUG,
+            path = %private_key_file_path.display(),
+            "Reading key file for TLS"
         );
         let key_data = std::fs::read_to_string(private_key_file_path).with_context(|| {
             format!(
@@ -176,9 +181,10 @@ impl TlsManager {
         let cert_file_path = tls_paths.cert_file();
         let private_key_file_path = tls_paths.private_key_file();
 
-        debug!(
-            "Writing certificate file for TLS to: {}",
-            cert_file_path.display()
+        event!(
+            Level::DEBUG,
+            path = %cert_file_path.display(),
+            "Writing certificate file for TLS"
         );
         let mut cert_file = file_opts.open(cert_file_path).with_context(|| {
             format!(
@@ -194,9 +200,10 @@ impl TlsManager {
             )
         })?;
 
-        debug!(
-            "Writing key file for TLS to: {}",
-            private_key_file_path.display()
+        event!(
+            Level::DEBUG,
+            path = %private_key_file_path.display(),
+            "Writing key file for TLS"
         );
         let mut private_key_file = file_opts.open(private_key_file_path).with_context(|| {
             format!(

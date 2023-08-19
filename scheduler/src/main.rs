@@ -4,9 +4,10 @@ mod tls;
 
 use anyhow::Context;
 use clap::Parser;
-use log::{info, trace, warn};
 use std::error;
 use std::path::Path;
+use tracing::{event, Level};
+use tracing_log::AsTrace;
 
 use crate::args::CliArguments;
 use crate::grpc::server::GrpcServer;
@@ -19,17 +20,18 @@ async fn main() -> Result<(), Box<dyn error::Error>> {
     // Parse the configuration and configure logger verbosity
     let args = CliArguments::parse();
 
-    env_logger::builder()
-        .filter_level(args.verbose.log_level_filter())
+    tracing_subscriber::fmt()
+        .with_max_level(args.verbose.log_level_filter().as_trace())
         .init();
 
-    info!(
-        "Starting {} version {}",
-        env!("CARGO_PKG_NAME"),
-        env!("CARGO_PKG_VERSION")
+    event!(
+        Level::INFO,
+        app_name = env!("CARGO_PKG_NAME"),
+        app_version = env!("CARGO_PKG_VERSION"),
+        "Starting application"
     );
 
-    trace!("Loaded configuration: {:#?}", args);
+    event!(Level::TRACE, ?args, "Loaded configuration");
 
     // Prepare the application
     args.prepare_directories()?;
@@ -38,7 +40,7 @@ async fn main() -> Result<(), Box<dyn error::Error>> {
         let tls_base_dir = &Path::new(&args.data_dir).join("tls/");
         let tls_config = TlsConfig::new(tls_base_dir, !args.no_tls_secret_generation);
 
-        trace!("Loaded TLS configuration: {:#?}", tls_config);
+        event!(Level::TRACE, ?tls_config, "Loaded TLS configuration");
 
         tls_config.prepare_directory()?;
 
@@ -49,7 +51,7 @@ async fn main() -> Result<(), Box<dyn error::Error>> {
 
         Some(tls_manager)
     } else {
-        warn!("The server will run in an unsecure mode because TLS was disabled. Are you certain whatever you're doing is worth it?");
+        event!(Level::WARN, "The server will run in an unsecure mode because TLS was disabled. Are you certain whatever you're doing is worth it?");
         None
     };
 
