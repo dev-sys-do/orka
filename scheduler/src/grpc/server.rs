@@ -3,7 +3,6 @@
 use std::net::SocketAddr;
 
 use anyhow::{Context, Result};
-use log::{debug, info};
 use orka_proto::{
     scheduler_agent::{
         lifecycle_service_server::LifecycleServiceServer,
@@ -12,6 +11,8 @@ use orka_proto::{
     scheduler_controller::scheduling_service_server::SchedulingServiceServer,
 };
 use tonic::transport::{Identity, Server, ServerTlsConfig};
+use tower_http::trace::TraceLayer;
+use tracing::{event, Level};
 
 use crate::tls::manager::TlsManager;
 
@@ -60,12 +61,13 @@ impl GrpcServer {
     /// Start the gRPC server.
     pub async fn start_server(&self) -> Result<()> {
         // Configure the server
-        info!("Starting gRPC server on {}", self.bind_socket_address);
-        let mut server_builder = Server::builder();
+        event!(Level::INFO, bind_address = %self.bind_socket_address, "Starting gRPC server");
+
+        let mut server_builder = Server::builder().layer(TraceLayer::new_for_grpc());
 
         // If the TLS manager is present, configure the gRPC server with TLS
         if let Some(tls_manager) = &self.tls_manager {
-            debug!("Configuring the gRPC server for TLS");
+            event!(Level::DEBUG, "Configuring the gRPC server for TLS");
 
             let cert_data = tls_manager
                 .cert_data()
@@ -89,7 +91,7 @@ impl GrpcServer {
             .add_service(StatusUpdateServiceServer::new(AgentStatusUpdateSvc::new()))
             .add_service(SchedulingServiceServer::new(ControllerSchedulingSvc::new()));
 
-        debug!("The gRPC server was configured successfully");
+        event!(Level::DEBUG, "The gRPC server was configured successfully");
 
         router
             .serve(self.bind_socket_address)

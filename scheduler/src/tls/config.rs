@@ -7,7 +7,7 @@ use std::{
 };
 
 use anyhow::{Context, Result};
-use log::debug;
+use tracing::{event, Level};
 
 /// Configuration for TLS management.
 #[derive(Debug)]
@@ -103,7 +103,7 @@ impl TlsPaths {
             )
         })?;
 
-        debug!("Created TLS base directory: {}", self.base_dir.display());
+        event!(Level::DEBUG, path = %self.base_dir.display(), "Created TLS base directory");
         Ok(())
     }
 
