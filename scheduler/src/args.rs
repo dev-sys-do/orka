@@ -5,7 +5,7 @@ use std::{fs, io::ErrorKind};
 use anyhow::{Context, Result};
 use clap::Parser;
 use clap_verbosity_flag::{InfoLevel, Verbosity};
-use log::debug;
+use tracing::{event, Level};
 
 /// Scheduler service for the Orka container orchestration system.
 #[derive(Parser, Debug)]
@@ -55,7 +55,11 @@ impl CliArguments {
             )
         })?;
 
-        debug!("Created application data directory: {}", self.data_dir);
+        event!(
+            Level::DEBUG,
+            path = self.data_dir,
+            "Created application data directory"
+        );
         Ok(())
     }
 }
