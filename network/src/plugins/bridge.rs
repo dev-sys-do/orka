@@ -1,98 +1,118 @@
-use rtnetlink::{AddressAddRequest, Error, LinkAddRequest};
-use std::net::{IpAddr, Ipv4Addr};
+use futures::stream::TryStreamExt;
+use rtnetlink::{Error, Handle};
+use std::net::IpAddr;
 
+#[allow(unused_variables)]
 pub struct Bridge {
-    _ifname: String,
-    index: u32,
+    ifname: String,
+    ipaddr: IpAddr,
+    mask: u8,
 }
 
 impl Bridge {
-    /// Creates a new `Bridge` instance with the given name.
-    pub async fn new(ifname: &str) -> Result<Self, Error> {
-        // Establish a new connection to rtnetlink
+    /// Create a new `Bridge` instance
+    pub async fn build(ifname: &str, ipaddr: IpAddr, mask: u8) -> Result<(Self), Error> {
         let (connection, handle, _) = rtnetlink::new_connection().unwrap();
         tokio::spawn(connection);
 
-        // Create a bridge interface
-        let bridge_request: LinkAddRequest = handle.link().add().bridge(ifname.to_string());
-        bridge_request
-            .execute()
-            .await
-            .map_err(|e| println!("[ORKANET]: ERROR {}", e))
-            .unwrap();
+        let mut links = handle.link().get().match_name(ifname.to_string()).execute();
+        match links.try_next().await {
+            Ok(Some(_)) => !panic!("[ORKANET]: Interface {} already exists.", ifname),
+            _ => {
+                handle
+                    .link()
+                    .add()
+                    .bridge(ifname.to_owned())
+                    .execute()
+                    .await
+                    .map_err(|e| println!("[ORKANET]: ERROR {}", e))
+                    .unwrap();
+            }
+        };
 
-        // Retrieve the index of the bridge interface
-        let index: u32 = unsafe { libc::if_nametoindex(ifname.to_string().as_ptr() as *const i8) };
+        Bridge::attach_ip(&handle, ifname, ipaddr, mask).await;
+        Bridge::set_link_up(&handle, ifname).await;
 
         Ok(Bridge {
-            _ifname: ifname.to_string(),
-            index,
+            ifname: ifname.to_string(),
+            ipaddr,
+            mask,
         })
     }
 
-    /// Add an address
-    async fn set_addr(&self, ipaddr: IpAddr) -> Result<(), Error> {
-        // Establish a new connection to rtnetlink
-        let (connection, handle, _) = rtnetlink::new_connection().unwrap();
-        tokio::spawn(connection);
-
-        // Assign an IP address (e.g., 10.10.0.1/16) to the bridge interface
-        let address_bridge_request: AddressAddRequest =
-            handle.address().add(self.index.clone(), ipaddr, 16);
-        address_bridge_request
-            .execute()
-            .await
-            .map_err(|e| println!("[ORKANET]: ERROR {}", e))
-            .unwrap();
-
-        Ok(())
+    /// Attach ipv4 to interface
+    async fn attach_ip(handle: &Handle, ifname: &str, ipaddr: IpAddr, mask: u8) {
+        let mut links = handle.link().get().match_name(ifname.to_owned()).execute();
+        match links.try_next().await {
+            Ok(Some(link)) => {
+                handle
+                    .address()
+                    .add(link.header.index, ipaddr, mask)
+                    .execute()
+                    .await
+                    // .map_err(|e| println!("[ORKANET]: ERROR {}", e))
+                    .unwrap();
+            }
+            Ok(None) => !panic!("[ORKANET]: Error on on attach ip {}.", ifname),
+            Err(_) => !panic!("[ORKANET]: Error on on attach ip {}.", ifname),
+        }
     }
 
     /// Up interface
-    async fn up(&self) -> Result<(), Error> {
-        // Establish a new connection to rtnetlink
-        let (connection, handle, _) = rtnetlink::new_connection().unwrap();
-        tokio::spawn(connection);
-
-        // Enable the bridge interface
-        handle
-            .link()
-            .set(self.index.clone())
-            .up()
-            .execute()
-            .await
-            .map_err(|e| println!("[ORKANET]: ERROR {}", e))
-            .unwrap();
-
-        Ok(())
+    async fn set_link_up(handle: &Handle, ifname: &str) {
+        let mut links = handle.link().get().match_name(ifname.to_owned()).execute();
+        match links.try_next().await {
+            Ok(Some(link)) => {
+                handle
+                    .link()
+                    .set(link.header.index)
+                    .up()
+                    .execute()
+                    .await
+                    // .map_err(|e| println!("[ORKANET]: ERROR {}", e))
+                    .unwrap();
+            }
+            Ok(None) => !panic!("[ORKANET]: Error on set link up {}.", ifname),
+            Err(_) => !panic!("[ORKANET]: Error on set link up {}.", ifname),
+        }
     }
 
-    /// Build
-    pub async fn build(&self) -> Result<(), Error> {
-        let ipaddr: IpAddr = IpAddr::V4(Ipv4Addr::new(10, 10, 0, 1));
-
-        self.set_addr(ipaddr).await.unwrap();
-        self.up().await.unwrap();
-
-        Ok(())
-    }
-
-    /// Add an interface
-    pub async fn add_interface(&self, link_index: u32) -> Result<(), Error> {
-        // Establish a new connection to rtnetlink
-        let (connection, handle, _) = rtnetlink::new_connection().unwrap();
-        tokio::spawn(connection);
-
-        // Add
-        handle
+    /// Assign veth
+    pub async fn assign_veth(handle: &Handle, ifname_bridge: &str, ifname_veth: &str) {
+        let mut links = handle
             .link()
-            .set(link_index)
-            .master(self.index.clone())
-            .execute()
-            .await
-            .map_err(|e| println!("[ORKANET]: ERROR {}", e))
-            .unwrap();
+            .get()
+            .match_name(ifname_bridge.to_owned())
+            .execute();
 
-        Ok(())
+        let master_index = match links.try_next().await {
+            Ok(Some(link)) => link.header.index,
+            _ => !panic!("[ORKANET]: Error get index master {}.", ifname_bridge),
+        };
+
+        let mut links = handle
+            .link()
+            .get()
+            .match_name(ifname_veth.to_owned())
+            .execute();
+        match links.try_next().await {
+            Ok(Some(link)) => {
+                handle
+                    .link()
+                    .set(link.header.index)
+                    .master(master_index)
+                    .execute()
+                    .await
+                    .unwrap();
+            }
+            Ok(None) => !panic!(
+                "[ORKANET]: Error assign veth {} to master {}.",
+                ifname_veth, ifname_bridge
+            ),
+            Err(_) => !panic!(
+                "[ORKANET]: Error assign veth {} to master {}.",
+                ifname_veth, ifname_bridge
+            ),
+        }
     }
 }

@@ -1,10 +1,12 @@
+use std::net::{IpAddr, Ipv4Addr};
+
 // use cni_plugin::{Cni, logger};
 use orkanet::plugins::bridge::Bridge;
 
 #[tokio::main]
 async fn main() {
-    let bridge = Bridge::new("orka0").await.unwrap();
-    bridge.build().await.unwrap();
+    let ipv4: IpAddr = IpAddr::V4(Ipv4Addr::new(10, 10, 0, 1));
+    let _bridge = Bridge::build("orka0", ipv4, 16).await.unwrap();
     // logger::install(env!("CARGO_PKG_NAME"));
 
     // match Cni::load() {
