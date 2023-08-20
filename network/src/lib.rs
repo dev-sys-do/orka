@@ -1,21 +1,24 @@
-use cni_plugin::error::CniError;
+mod cni;
+pub mod plugins;
 
-pub fn add() -> Result<(), CniError> {
-    println!("ADD method");
-    Ok(())
-}
+// use crate::cni::error::Error;
 
-pub fn delete() -> Result<(), CniError> {
-    println!("DELETE method");
-    Ok(())
-}
+// pub fn add() -> Result<(), Error> {
+//     println!("ADD method");
+//     Ok(())
+// }
 
-pub fn check() -> Result<(), CniError> {
-    println!("CHECK method");
-    Ok(())
-}
+// pub fn delete() -> Result<(), Error> {
+//     println!("DELETE method");
+//     Ok(())
+// }
 
-pub fn version() -> Result<(), CniError> {
-    println!("VERSION method");
-    Ok(())
-}
+// pub fn check() -> Result<(), Error> {
+//     println!("CHECK method");
+//     Ok(())
+// }
+
+// pub fn version() -> Result<(), Error> {
+//     println!("VERSION method");
+//     Ok(())
+// }
