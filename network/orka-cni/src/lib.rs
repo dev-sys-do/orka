@@ -1,8 +1,3 @@
-pub mod cni;
-pub mod plugins;
-
-// use crate::cni::error::Error;
-
 // pub fn add() -> Result<(), Error> {
 //     println!("ADD method");
 //     Ok(())

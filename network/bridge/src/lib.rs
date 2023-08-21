@@ -1,8 +1,9 @@
+pub mod cni;
+
 use derivative::Derivative;
 use futures::stream::TryStreamExt;
 use rtnetlink::{Error, Handle};
 use serde::Deserialize;
-// use std::net::IpAddr;
 use crate::cni::{skel::CmdArgs, types};
 
 #[derive(Deserialize, Debug)]
@@ -312,30 +313,4 @@ impl Bridge {
 
         // let n = Self::load_net_conf()
     }
-
-    // pub async fn get_namespace_id(container_id: &str) -> Result<i32, nix::Error> {
-    //     let channel: Channel = connect("/run/containerd/containerd.sock").await.expect("Connect Failed");
-
-    //     // let mut client: VersionClient<Channel> = VersionClient::new(channel.clone());
-    //     let client = TasksClient::new(channel.clone());
-    //     let req = !with
-    //     client.create(request)
-    //     // let resp: Response<VersionResponse> = client.version(()).await?;
-    //     // println!("Response: {:?}", resp.get_ref());
-    //     // Read the path to the namespace from the container ID
-    //     let namespace_path: String = format!("/var/run/netns/{}", container_id);
-
-    //     // Open the namespace file descriptor
-    //     let fd: File = File::open(namespace_path).unwrap();
-    //     let fd = fd.into_raw_fd();
-
-    //     // Attach to the namespace
-    //     setns(fd, CloneFlags::empty())?;
-
-    //     // Get the current process' namespace ID
-    //     let namespace_id: i32 = nix::unistd::getpid().into();
-
-    //     // Return the namespace ID
-    //     Ok(namespace_id)
-    // }
 }
