@@ -1,12 +1,16 @@
 [package]
-name = "orkanet"
+name = "orka-cni"
 version = "0.1.0"
 edition = "2021"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
+containerd-client = "0.4.0"
+derivative = "2.2.0"
 futures = "0.3.28"
+nix = "0.26.2"
 rtnetlink = "0.13.1"
-serde = "1.0.183"
+serde = { version = "1.0.183", features = ["derive"] }
+serde_json = "1.0.105"
 tokio = { version = "1.32.0", features = ["full"] }

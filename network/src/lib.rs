@@ -1,4 +1,4 @@
-mod cni;
+pub mod cni;
 pub mod plugins;
 
 // use crate::cni::error::Error;
