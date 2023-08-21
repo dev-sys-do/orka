@@ -1,28 +1,29 @@
-pub mod Workload_Request;
+use serde::Deserialize;
+use validator::{Validate};
 
 #[derive(Debug, Validate, Deserialize)]
 pub struct Workload_Request{
-    pub version: string,
+    pub version: String,
     pub workload: Workload,
 
     
 }
-
+#[derive(Debug, Validate, Deserialize)]
 pub struct Workload{
     #[validate(length(min = 1))]
-    kind: String,
+    pub kind: String,
 
     #[validate(length(min = 1))]
-    name: String,
+    pub name: String,
     
-    environment: Vec<String>,
+    pub environment: Vec<String>,
     
-    registry: String,
+    pub registry: String,
     
     #[validate(length(min = 1))]
-    image: String,
+    pub image: String,
     
-    port: String,
+    pub port: String,
     
-    network: Vec<String>
-}   
+    pub network: Vec<String>
+}
