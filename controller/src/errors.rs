@@ -1,0 +1,42 @@
+use axum::{extract::rejection::JsonRejection, http::StatusCode, response::IntoResponse, Json};
+use serde_json::json;
+use thiserror::Error;
+use validator::ValidationErrors;
+use log::error;
+
+#[derive(Debug, Error)]
+pub enum ApiError {
+    #[error("Validation error")]
+    InvalidRequest(#[from] ValidationErrors),
+
+    #[error("GRPC client connection error")]
+    ClientConnectError(#[from] tonic::transport::Error),
+
+    #[error("Serialization error")]
+    SerializationError(#[from] serde_json::Error),
+
+}
+
+impl IntoResponse for ApiError {
+    fn into_response(self) -> axum::response::Response {
+        let (status, mut message) = match self {
+            ApiError::InvalidRequest(json_rejection) => {
+                (StatusCode::BAD_REQUEST, json_rejection.to_string())
+            },
+            ApiError::ClientConnectError(e) => {
+                (StatusCode::INTERNAL_SERVER_ERROR, e.to_string())
+            },
+            ApiError::SerializationError(e) => {
+                (StatusCode::BAD_REQUEST, e.to_string())
+            },
+        };
+
+        let payload = json!({
+            "message": message,
+        });
+
+        error!("{:?}", Json(&payload));
+
+        (status, Json(payload)).into_response()
+    }
+}

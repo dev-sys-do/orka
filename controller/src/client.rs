@@ -11,7 +11,7 @@ pub struct Client {
 }
 
 impl Client {
-    pub async fn new() -> Result<Self, Box<dyn std::error::Error>> {
+    pub async fn new() -> anyhow::Result<Self, tonic::transport::Error> {
         let client = SchedulingServiceClient::connect("http://[::1]:50051").await?;
         Ok(Self { client })
     }
