@@ -1,27 +1,32 @@
+use bridge;
+use cni_plugin::{error::CniError, logger, Cni};
+
 #[tokio::main]
-async fn main() {
-    // match Cni::load() {
-    //     Cni::Add {
-    //         container_id,
-    //         ifname,
-    //         netns,
-    //         path,
-    //         config,
-    //     } => orka_cni::add(),
-    //     Cni::Del {
-    //         container_id,
-    //         ifname,
-    //         netns,
-    //         path,
-    //         config,
-    //     } => orka_cni::delete(),
-    //     Cni::Check {
-    //         container_id,
-    //         ifname,
-    //         netns,
-    //         path,
-    //         config,
-    //     } => orka_cni::check(),
-    //     Cni::Version(_) => unreachable!()
-    // };
+async fn main() -> Result<(), CniError> {
+    logger::install("bridge.log");
+
+    match Cni::load() {
+        Cni::Add {
+            container_id,
+            ifname,
+            netns,
+            path,
+            config,
+        } => bridge::cmd_add(container_id, ifname, netns, path, config).await,
+        Cni::Del {
+            container_id,
+            ifname,
+            netns,
+            path,
+            config,
+        } => bridge::cmd_del(container_id, ifname, netns, path, config).await,
+        Cni::Check {
+            container_id,
+            ifname,
+            netns,
+            path,
+            config,
+        } => bridge::cmd_check(container_id, ifname, netns, path, config).await,
+        Cni::Version(_) => Ok(()),
+    }
 }

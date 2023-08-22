@@ -1,0 +1,100 @@
+09:34:45 [DEBUG] (1) cni_plugin::cni: CNI plugin built with cni-plugin crate version 0.2.1
+09:34:45 [DEBUG] (1) cni_plugin::cni: reading stdin til EOF...
+09:34:45 [DEBUG] (1) cni_plugin::cni: read payload bytes=257
+09:34:45 [DEBUG] (1) cni_plugin::cni: read env var CNI_COMMAND = "ADD"
+09:34:45 [DEBUG] (1) cni_plugin::cni: read env var CNI_CONTAINERID = "1111"
+09:34:45 [ERROR] key must be a string at line 6 column 3
+09:34:45 [DEBUG] (1) cni_plugin::reply: replying with ErrorReply {
+    cni_version: Version {
+        major: 1,
+        minor: 0,
+        patch: 0,
+        pre: [],
+        build: [],
+    },
+    code: 6,
+    msg: "Cannot decode JSON payload",
+    details: "key must be a string at line 6 column 3",
+}
+09:38:51 [DEBUG] (1) cni_plugin::cni: CNI plugin built with cni-plugin crate version 0.2.1
+09:38:51 [DEBUG] (1) cni_plugin::cni: reading stdin til EOF...
+09:38:51 [DEBUG] (1) cni_plugin::cni: read payload bytes=257
+09:38:51 [DEBUG] (1) cni_plugin::cni: read env var CNI_COMMAND = "ADD"
+09:38:51 [DEBUG] (1) cni_plugin::cni: read env var CNI_CONTAINERID = "1111"
+09:38:51 [ERROR] key must be a string at line 6 column 3
+09:38:51 [DEBUG] (1) cni_plugin::reply: replying with ErrorReply {
+    cni_version: Version {
+        major: 1,
+        minor: 0,
+        patch: 0,
+        pre: [],
+        build: [],
+    },
+    code: 6,
+    msg: "Cannot decode JSON payload",
+    details: "key must be a string at line 6 column 3",
+}
+09:40:10 [DEBUG] (1) cni_plugin::cni: CNI plugin built with cni-plugin crate version 0.2.1
+09:40:10 [DEBUG] (1) cni_plugin::cni: reading stdin til EOF...
+09:40:10 [DEBUG] (1) cni_plugin::cni: read payload bytes=200
+09:40:10 [DEBUG] (1) cni_plugin::cni: read env var CNI_COMMAND = "ADD"
+09:40:10 [DEBUG] (1) cni_plugin::cni: read env var CNI_CONTAINERID = "1111"
+09:40:10 [ERROR] trailing comma at line 11 column 3
+09:40:10 [DEBUG] (1) cni_plugin::reply: replying with ErrorReply {
+    cni_version: Version {
+        major: 1,
+        minor: 0,
+        patch: 0,
+        pre: [],
+        build: [],
+    },
+    code: 6,
+    msg: "Cannot decode JSON payload",
+    details: "trailing comma at line 11 column 3",
+}
+09:40:32 [DEBUG] (1) cni_plugin::cni: CNI plugin built with cni-plugin crate version 0.2.1
+09:40:32 [DEBUG] (1) cni_plugin::cni: reading stdin til EOF...
+09:40:32 [DEBUG] (1) cni_plugin::cni: read payload bytes=201
+09:40:32 [DEBUG] (1) cni_plugin::cni: read env var CNI_COMMAND = "ADD"
+09:40:32 [DEBUG] (1) cni_plugin::cni: read env var CNI_CONTAINERID = "1111"
+09:40:32 [ERROR] trailing comma at line 11 column 3
+09:40:32 [DEBUG] (1) cni_plugin::reply: replying with ErrorReply {
+    cni_version: Version {
+        major: 1,
+        minor: 0,
+        patch: 0,
+        pre: [],
+        build: [],
+    },
+    code: 6,
+    msg: "Cannot decode JSON payload",
+    details: "trailing comma at line 11 column 3",
+}
+09:44:07 [DEBUG] (1) cni_plugin::cni: CNI plugin built with cni-plugin crate version 0.2.1
+09:44:07 [DEBUG] (1) cni_plugin::cni: reading stdin til EOF...
+09:44:07 [DEBUG] (1) cni_plugin::cni: read payload bytes=199
+09:44:07 [DEBUG] (1) cni_plugin::cni: read env var CNI_COMMAND = "ADD"
+09:44:07 [DEBUG] (1) cni_plugin::cni: read env var CNI_CONTAINERID = "1111"
+09:44:07 [DEBUG] (1) cni_plugin::cni: read env var CNI_IFNAME = "toto"
+09:44:07 [DEBUG] (1) cni_plugin::cni: read env var CNI_NETNS = "2222"
+09:45:34 [DEBUG] (1) cni_plugin::cni: CNI plugin built with cni-plugin crate version 0.2.1
+09:45:34 [DEBUG] (1) cni_plugin::cni: reading stdin til EOF...
+09:45:34 [DEBUG] (1) cni_plugin::cni: read payload bytes=199
+09:45:34 [DEBUG] (1) cni_plugin::cni: read env var CNI_COMMAND = "ADD"
+09:45:34 [DEBUG] (1) cni_plugin::cni: read env var CNI_CONTAINERID = "1111"
+09:45:34 [DEBUG] (1) cni_plugin::cni: read env var CNI_IFNAME = "toto"
+09:45:34 [DEBUG] (1) cni_plugin::cni: read env var CNI_NETNS = "2222"
+10:00:19 [DEBUG] (1) cni_plugin::cni: CNI plugin built with cni-plugin crate version 0.2.1
+10:00:19 [DEBUG] (1) cni_plugin::cni: reading stdin til EOF...
+10:00:19 [DEBUG] (1) cni_plugin::cni: read payload bytes=199
+10:00:19 [DEBUG] (1) cni_plugin::cni: read env var CNI_COMMAND = "ADD"
+10:00:19 [DEBUG] (1) cni_plugin::cni: read env var CNI_CONTAINERID = "1111"
+10:00:19 [DEBUG] (1) cni_plugin::cni: read env var CNI_IFNAME = "toto"
+10:00:19 [DEBUG] (1) cni_plugin::cni: read env var CNI_NETNS = "2222"
+10:10:12 [DEBUG] (1) cni_plugin::cni: CNI plugin built with cni-plugin crate version 0.2.1
+10:10:12 [DEBUG] (1) cni_plugin::cni: reading stdin til EOF...
+10:10:12 [DEBUG] (1) cni_plugin::cni: read payload bytes=199
+10:10:12 [DEBUG] (1) cni_plugin::cni: read env var CNI_COMMAND = "ADD"
+10:10:12 [DEBUG] (1) cni_plugin::cni: read env var CNI_CONTAINERID = "1111"
+10:10:12 [DEBUG] (1) cni_plugin::cni: read env var CNI_IFNAME = "toto"
+10:10:12 [DEBUG] (1) cni_plugin::cni: read env var CNI_NETNS = "2222"

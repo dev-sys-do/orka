@@ -65,3 +65,26 @@ The following `CNI_ARGS` are supported:
 - `MAC`: request a specific MAC address for the interface
     
   (example: CNI_ARGS=“MAC=c2:11:22:33:44:55”)
+
+## Execution Protocol 
+
+### Parameters
+
+Protocol parameters are passed to the plugins via OS environment variables.
+
+- `CNI_COMMAND`: indicates the desired operation; ADD, DEL, CHECK, or VERSION.
+- `CNI_CONTAINERID`: Container ID. A unique plaintext identifier for a container, allocated by the runtime. Must not be empty. Must start with an alphanumeric character, optionally followed by any combination of one or more alphanumeric characters, underscore (_), dot (.) or hyphen (-).
+- `CNI_NETNS`: A reference to the container’s “isolation domain”. If using network namespaces, then a path to the network namespace (e.g. /run/netns/[nsname])
+- `CNI_IFNAME`: Name of the interface to create inside the container; if the plugin is unable to use this interface name it must return an error.
+- `CNI_ARGS`: Extra arguments passed in by the user at invocation time. Alphanumeric key-value pairs separated by semicolons; for example, “FOO=BAR;ABC=123”
+- `CNI_PATH`: List of paths to search for CNI plugin executables. Paths are separated by an OS-specific list separator; for example ‘:’ on Linux and ‘;’ on Windows
+
+### CNI operations
+
+CNI defines 4 operations: `ADD`, `DEL`, `CHECK`, and `VERSION`. These are passed to the plugin via the `CNI_COMMAND` environment variable.
+
+### Getting started
+
+```bash
+cat bridge.test.conf | CNI_COMMAND=ADD CNI_CONTAINERID=1111 CNI_IFNAME=toto CNI_NETNS=2222 ./target/debug/bridge
+```
