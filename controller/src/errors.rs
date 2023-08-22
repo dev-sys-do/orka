@@ -18,7 +18,7 @@ pub enum ApiError {
 
 impl IntoResponse for ApiError {
     fn into_response(self) -> axum::response::Response {
-        let (status, mut message) = match self {
+        let (status, message) = match self {
             ApiError::InvalidRequest(json_rejection) => {
                 (StatusCode::BAD_REQUEST, json_rejection.to_string())
             }

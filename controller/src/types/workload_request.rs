@@ -2,7 +2,7 @@ use serde::Deserialize;
 use validator::Validate;
 
 #[derive(Debug, Validate, Deserialize)]
-pub struct Workload_Request {
+pub struct WorkloadRequest {
     pub version: String,
     pub workload: Workload,
 }

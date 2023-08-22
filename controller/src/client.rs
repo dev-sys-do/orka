@@ -33,5 +33,3 @@ impl Client {
         Ok(())
     }
 }
-
-fn main() {}
