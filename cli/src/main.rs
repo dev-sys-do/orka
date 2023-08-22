@@ -3,11 +3,11 @@ use clap::Parser;
 use crate::args::{CommandType, OrkaArgs};
 
 mod args;
-mod default_config;
+mod config;
 
 fn main() {
     println!("Hello, cli!");
-    let config = default_config::get_config();
+    let config = config::get_config();
     println!("Your config:\n{:?}\n\n", config);
     let args = OrkaArgs::parse();
     println!("{:?}", args);

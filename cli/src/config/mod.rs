@@ -14,6 +14,7 @@ pub fn get_config() -> Config {
     let home = home::home_dir().unwrap();
     let config_location = format!("{}/.config/orka", home.as_path().display());
     let config_file_location = format!("{}/config.yaml", config_location);
+    println!("Config file location: {}", config_file_location);
     let file = match fs::File::open(config_file_location.clone()) {
         Ok(file) => file,
         Err(e) => {
@@ -47,7 +48,7 @@ fn generate_default_config(config_location: String, config_file_location: String
             exit(-1);
         }
     }
-    match fs::write(config_file_location.clone(), "orka_url: http://localhost\n") {
+    match fs::write(config_file_location.clone(), "orkaUrl: http://localhost\n") {
         Ok(..) => match fs::File::open(config_file_location) {
             Ok(f) => f,
             Err(e) => {
