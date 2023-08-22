@@ -1,7 +1,7 @@
 mod client;
+mod errors;
 mod routes;
 mod types;
-mod errors;
 
 use crate::client::scheduler;
 
@@ -9,17 +9,16 @@ use tokio::sync::mpsc;
 use tokio_stream::wrappers::ReceiverStream;
 use tonic::{transport::Server, Request, Response, Status};
 
-use axum::{routing::get, Router};
+use axum::Router;
 use scheduler::scheduling_service_server::{SchedulingService, SchedulingServiceServer};
 use scheduler::{SchedulingRequest, WorkloadStatus};
 use std::net::SocketAddr;
 use tokio::task;
 
-
-use routes::workloads::post_workload;
-use axum::routing::post;
+use axum::routing::{delete, post};
 use log::info;
-
+use routes::instances::{delete_instance, get_instances, get_specific_instance, post_instance};
+use routes::workloads::{delete_workload, get_specific_workload, get_workloads, post_workload};
 
 #[derive(Debug, Default)]
 pub struct MySchedulingService {}
@@ -37,7 +36,6 @@ impl SchedulingService for MySchedulingService {
         let (sender, receiver) = mpsc::channel(4);
 
         tokio::spawn(async move {
-
             let fake_statuses_response = vec![
                 WorkloadStatus {
                     name: "Workload 1".to_string(),
@@ -88,7 +86,6 @@ impl SchedulingService for MySchedulingService {
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
-
     // SETUP LOGGING
     pretty_env_logger::init();
 
@@ -108,7 +105,17 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     // HTTP
     let http_addr = SocketAddr::from(([127, 0, 0, 1], 3000));
-    let app = Router::new().route("/workloads", post(post_workload));
+    let app = Router::new()
+        .route("/workloads", post(post_workload).get(get_workloads))
+        .route(
+            "/workloads/:id",
+            delete(delete_workload).get(get_specific_workload),
+        )
+        .route("/instances", post(post_instance).get(get_instances))
+        .route(
+            "/instances/:id",
+            delete(delete_instance).get(get_specific_instance),
+        );
 
     // Spawn the HTTP server as a tokio task
     let http_thread = task::spawn(async move {
@@ -124,4 +131,3 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     Ok(())
 }
-
