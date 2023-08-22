@@ -10,20 +10,20 @@ pub struct ConfigType {
 #[derive(Debug, Subcommand)]
 pub enum ConfigCommandType {
     /// Get the specified resource
-    Get(GetConfigType),
+    Get(GetConfig),
 
     /// Set the specified resource
-    Set(SetConfigType),
+    Set(SetConfig),
 }
 
 #[derive(Debug, Parser)]
-pub struct GetConfigType {
+pub struct GetConfig {
     /// The resource to get
     pub resource: ConfigResource,
 }
 
 #[derive(Debug, Parser, Clone)]
-pub struct SetConfigType {
+pub struct SetConfig {
     /// The resource to set
     pub resource: ConfigResource,
 

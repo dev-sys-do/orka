@@ -1,4 +1,4 @@
-use clap::{Parser, Subcommand};
+use clap::{command, Parser, Subcommand};
 
 use self::{
     config::ConfigType,
@@ -9,7 +9,9 @@ pub mod config;
 pub mod crud;
 
 #[derive(Parser, Debug)]
-pub struct OrkaArgs {
+#[clap(author, version, about, long_about = None)]
+#[command(name = "orkactl")]
+pub struct OrkaCtlArgs {
     #[clap(subcommand, name = "config")]
     pub command: CommandType,
 }
