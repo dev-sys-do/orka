@@ -36,51 +36,6 @@ impl Link for Bridge {
             ))),
         }
     }
-
-    async fn link_promisc_on(&self, handle: &Handle) -> Result<(), Error> {
-        let mut links = handle
-            .link()
-            .get()
-            .match_name(self.linkattrs.name.clone())
-            .execute();
-        match links.try_next().await {
-            Ok(Some(link)) => {
-                handle
-                    .link()
-                    .set(link.header.index)
-                    .promiscuous(true)
-                    .execute()
-                    .await
-            }
-            Ok(None) => Err(Error::InvalidNla(format!(
-                "[ORKANET]: Could not set promiscuous mode on {}.",
-                self.linkattrs.name
-            ))),
-            Err(_) => Err(Error::InvalidNla(format!(
-                "[ORKANET]: Could not set promiscuous mode on {}.",
-                self.linkattrs.name
-            ))),
-        }
-    }
-
-    async fn link_set_up(&self, handle: &Handle) -> Result<(), Error> {
-        let mut links = handle
-            .link()
-            .get()
-            .match_name(self.linkattrs.name.clone())
-            .execute();
-        match links.try_next().await {
-            Ok(Some(link)) => handle.link().set(link.header.index).up().execute().await,
-            Ok(None) => Err(Error::InvalidNla(format!(
-                "[ORKANET]: Could not set up {}.",
-                self.linkattrs.name
-            ))),
-            Err(_) => Err(Error::InvalidNla(format!(
-                "[ORKANET]: Could not set up {}.",
-                self.linkattrs.name
-            ))),
-        }
-    }
 }
 
 impl Bridge {
@@ -134,7 +89,7 @@ impl Bridge {
             return Err(err);
         }
         if br.promisc_mode {
-            if let Err(err) = br.link_promisc_on(&handle).await {
+            if let Err(err) = Bridge::link_promisc_on(&handle, br.linkattrs.name.clone()).await {
                 return Err(err);
             }
         }
@@ -143,7 +98,7 @@ impl Bridge {
         // ensure it's really a bridge with similar configuration
         // Self::bridge_by_name(handle, br.linkattrs.name.clone()).await;
 
-        if let Err(err) = br.link_set_up(&handle).await {
+        if let Err(err) = Bridge::link_set_up(&handle, br.linkattrs.name.clone()).await {
             return Err(err);
         }
 

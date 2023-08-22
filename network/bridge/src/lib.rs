@@ -21,13 +21,11 @@ pub async fn cmd_add(
         .specific
         .get("hairpinMode")
         .and_then(|value| value.as_bool())
-        .map(|b: bool| b)
         .unwrap_or(false);
     let is_promisc_mode: bool = config
         .specific
         .get("promiscMode")
         .and_then(|value| value.as_bool())
-        .map(|b: bool| b)
         .unwrap_or(false);
 
     if is_hairpin_mode && is_promisc_mode {
@@ -40,8 +38,6 @@ pub async fn cmd_add(
         Ok(br) => br,
         Err(err) => return Err(CniError::Generic(format!("{:?}", err))),
     };
-
-    
 
     // netns, err := ns.GetNS(args.Netns)
     // if err != nil {

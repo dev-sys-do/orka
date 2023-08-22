@@ -1,12 +1,6 @@
 use async_trait::async_trait;
+use futures::stream::TryStreamExt;
 use rtnetlink::{Error, Handle};
-
-#[async_trait]
-pub trait Link {
-    async fn link_promisc_on(&self, handle: &Handle) -> Result<(), Error>;
-    async fn link_add(&self, handle: &Handle) -> Result<(), Error>;
-    async fn link_set_up(&self, handle: &Handle) -> Result<(), Error>;
-}
 
 #[derive(Clone)]
 pub struct LinkAttrs {
@@ -19,4 +13,46 @@ pub struct LinkAttrs {
     // #[derivative(Default(value = "-1"))]
     pub txqlen: i8,
     pub hardware_addr: Option<String>,
+}
+
+#[async_trait]
+pub trait Link {
+    async fn link_add(&self, handle: &Handle) -> Result<(), Error>;
+
+    async fn link_promisc_on(handle: &Handle, name: String) -> Result<(), Error> {
+        let mut links = handle.link().get().match_name(name.clone()).execute();
+        match links.try_next().await {
+            Ok(Some(link)) => {
+                handle
+                    .link()
+                    .set(link.header.index)
+                    .promiscuous(true)
+                    .execute()
+                    .await
+            }
+            Ok(None) => Err(Error::InvalidNla(format!(
+                "[ORKANET]: Could not set promiscuous mode on {}.",
+                name
+            ))),
+            Err(_) => Err(Error::InvalidNla(format!(
+                "[ORKANET]: Could not set promiscuous mode on {}.",
+                name
+            ))),
+        }
+    }
+
+    async fn link_set_up(handle: &Handle, name: String) -> Result<(), Error> {
+        let mut links = handle.link().get().match_name(name.clone()).execute();
+        match links.try_next().await {
+            Ok(Some(link)) => handle.link().set(link.header.index).up().execute().await,
+            Ok(None) => Err(Error::InvalidNla(format!(
+                "[ORKANET]: Could not set up {}.",
+                name
+            ))),
+            Err(_) => Err(Error::InvalidNla(format!(
+                "[ORKANET]: Could not set up {}.",
+                name
+            ))),
+        }
+    }
 }

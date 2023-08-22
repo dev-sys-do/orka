@@ -15,69 +15,17 @@ pub struct Veth {
 #[async_trait]
 impl Link for Veth {
     async fn link_add(&self, handle: &Handle) -> Result<(), Error> {
-        let mut links = handle
+        match handle
             .link()
-            .get()
-            .match_name(self.linkattrs.name.clone())
-            .execute();
-        match links.try_next().await {
-            Ok(Some(_)) => Ok(()),
-            Ok(None) => {
-                handle
-                    .link()
-                    .add()
-                    .bridge(self.linkattrs.name.clone())
-                    .execute()
-                    .await
-            }
-            Err(_) => Err(Error::InvalidNla(format!(
-                "[ORKANET]: Could not add link {}.",
-                self.linkattrs.name
-            ))),
-        }
-    }
-
-    async fn link_promisc_on(&self, handle: &Handle) -> Result<(), Error> {
-        let mut links = handle
-            .link()
-            .get()
-            .match_name(self.linkattrs.name.clone())
-            .execute();
-        match links.try_next().await {
-            Ok(Some(link)) => {
-                handle
-                    .link()
-                    .set(link.header.index)
-                    .promiscuous(true)
-                    .execute()
-                    .await
-            }
-            Ok(None) => Err(Error::InvalidNla(format!(
-                "[ORKANET]: Could not set promiscuous mode on {}.",
-                self.linkattrs.name
-            ))),
-            Err(_) => Err(Error::InvalidNla(format!(
-                "[ORKANET]: Could not set promiscuous mode on {}.",
-                self.linkattrs.name
-            ))),
-        }
-    }
-
-    async fn link_set_up(&self, handle: &Handle) -> Result<(), Error> {
-        let mut links = handle
-            .link()
-            .get()
-            .match_name(self.linkattrs.name.clone())
-            .execute();
-        match links.try_next().await {
-            Ok(Some(link)) => handle.link().set(link.header.index).up().execute().await,
-            Ok(None) => Err(Error::InvalidNla(format!(
-                "[ORKANET]: Could not set up {}.",
-                self.linkattrs.name
-            ))),
-            Err(_) => Err(Error::InvalidNla(format!(
-                "[ORKANET]: Could not set up {}.",
-                self.linkattrs.name
+            .add()
+            .veth(self.linkattrs.name.clone(), self.peer_name.clone())
+            .execute()
+            .await
+        {
+            Ok(_) => Ok(()),
+            Err(err) => Err(Error::InvalidNla(format!(
+                "[ORKANET]: Failed to make veth pair {}",
+                err
             ))),
         }
     }
@@ -133,6 +81,7 @@ impl Veth {
         if let Err(err) = NetworkNamespace::unshare_processing(host_netns_path) {
             return Err(err);
         }
+
         // let host_veth = ;
 
         Ok(((), ()))
@@ -146,10 +95,11 @@ impl Veth {
         mac: String,
         host_ns: PathBuf,
     ) -> Result<(String, Self), Error> {
-        let peer_name: String = veth_peer_name
-            .is_empty()
-            .then(|| utils::random_veth_name())
-            .unwrap_or(veth_peer_name);
+        let peer_name: String = if veth_peer_name.is_empty() {
+            utils::random_veth_name()
+        } else {
+            veth_peer_name
+        };
         let veth: Veth =
             match Self::make_veth_pair(handle, name, peer_name.clone(), mtu, mac, host_ns).await {
                 Ok(veth) => veth,
@@ -186,41 +136,11 @@ impl Veth {
             veth.linkattrs.hardware_addr = Some(mac);
         }
 
-        if let Err(err) = handle
-            .link()
-            .add()
-            .veth(veth.linkattrs.name.clone(), veth.peer_name.clone())
-            .execute()
-            .await
-        {
-            return Err(Error::InvalidNla(format!(
-                "[ORKANET]: Failed to make veth pair {}",
-                err
-            )));
+        if let Err(err) = veth.link_add(&handle).await {
+            return Err(err);
         }
 
-        // Re-fetch the container link to get its creation-time parameters, e.g. index and mac
-        // veth2, err := netlink.LinkByName(name)
-        // let mut links = handle
-        //     .link()
-        //     .get()
-        //     .match_name(veth.linkattrs.name.clone())
-        //     .execute();
-        // let veth2 = match links.try_next().await {
-        //     Ok(Some(link)) => link,
-        //     Ok(None) => {
-        //         return Err(Error::InvalidNla(format!(
-        //             "[ORKANET]: Could not set promiscuous mode on {}.",
-        //             veth.linkattrs.name
-        //         )))
-        //     }
-        //     Err(_) => {
-        //         return Err(Error::InvalidNla(format!(
-        //             "[ORKANET]: Could not set promiscuous mode on {}.",
-        //             veth.linkattrs.name
-        //         )))
-        //     }
-        // };
+        // ? Re-fetch the container link to get its creation-time parameters, e.g. index and mac ?
 
         Ok(veth)
     }

@@ -1,4 +1,3 @@
-use bridge;
 use cni_plugin::{error::CniError, logger, Cni};
 
 #[tokio::main]
