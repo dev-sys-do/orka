@@ -46,7 +46,7 @@ flowchart LR
 
 - Ressource limitation  
 - Multi tenant
-- Scalabilty
+- Scalability
 - High Availability
 - Upgradable
 - Monitoring
@@ -161,9 +161,9 @@ Any command option passed through `orkactl` overrides the corresponding configur
 
 The following `orkactl` properties can be set though the configuration file:
 
-| Property Key             | Description | Optional | Default Value |
-|--------------------------|-------------|----------|---------------|
-| `apiUrl`                 | The URL to the Cluster API instance | Yes | `http://localhost` |
+| Property Key | Description                         | Optional | Default Value      |
+|--------------|-------------------------------------|----------|--------------------|
+| `apiUrl`     | The URL to the Cluster API instance | Yes      | `http://localhost` |
 
 
 ### Configuration File reference
