@@ -20,6 +20,5 @@ log = "0.4.20"
 [dependencies.syn]
 version = "2.0.28"
 
-
 [build-dependencies]
 tonic-build = "0.9"

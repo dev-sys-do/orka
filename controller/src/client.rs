@@ -1,6 +1,7 @@
 use scheduler::scheduling_service_client::SchedulingServiceClient;
 use scheduler::SchedulingRequest;
 use tonic::transport::Channel;
+use log::trace;
 
 pub mod scheduler {
     tonic::include_proto!("orkascheduler");
@@ -27,7 +28,7 @@ impl Client {
         let mut stream = response.into_inner();
 
         while let Some(status) = stream.message().await? {
-            println!("STATUS={:?}", status);
+            trace!("STATUS={:?}", status);
         }
         Ok(())
     }
