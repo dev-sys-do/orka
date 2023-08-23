@@ -10,6 +10,7 @@ use crate::{
     errors::ApiError,
 };
 use axum::Json;
+use log::info;
 use serde_json::{self, json, Value};
 use validator::Validate;
 
@@ -70,7 +71,7 @@ pub async fn post_workload(body: String) -> anyhow::Result<Json<Value>, ApiError
 
     let response = client.schedule_workload(request).await.unwrap();
 
-    println!("RESPONSE={:?}", response);
+    info!("RESPONSE={:?}", response);
     // TODO: Handle the grpc response and if OK save data and send response to cli
     Ok(Json(json!({"description": "Created"})))
 }
