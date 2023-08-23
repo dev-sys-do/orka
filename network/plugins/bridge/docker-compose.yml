@@ -2,6 +2,8 @@ services:
   brdige:
     build: .
     environment:
+      NETCONFPATH: /opt/cni/netconfs
+      CNI_PATH: /opt/cni/bin/
       CNI_COMMAND: ADD
       CNI_CONTAINERID: 1111
       CNI_IFNAME: eth0
