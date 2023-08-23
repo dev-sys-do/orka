@@ -86,5 +86,5 @@ CNI defines 4 operations: `ADD`, `DEL`, `CHECK`, and `VERSION`. These are passed
 ### Getting started
 
 ```bash
-cat bridge.test.conf | CNI_COMMAND=ADD CNI_CONTAINERID=1111 CNI_IFNAME=toto CNI_NETNS=2222 ./bridge
+cat bridge.test.conf | CNI_COMMAND=ADD CNI_CONTAINERID=1111 CNI_IFNAME=eth69 CNI_NETNS=/run/netns/red ./bridge
 ```
