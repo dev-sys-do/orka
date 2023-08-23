@@ -40,7 +40,7 @@ pub async fn post_workload(body: String) -> anyhow::Result<Json<Value>, ApiError
     // Create a new Workload Request object out of the body
     let json_body: WorkloadRequest = serde_json::from_str(&body)?;
 
-    // Validate the request
+    // Validate if the workload request is valid
     json_body.validate()?;
 
     // Extract the env variable table
@@ -68,7 +68,9 @@ pub async fn post_workload(body: String) -> anyhow::Result<Json<Value>, ApiError
         workload: Some(workload),
     };
 
-    client.schedule_workload(request).await.unwrap();
+    let response = client.schedule_workload(request).await.unwrap();
+
+    println!("RESPONSE={:?}", response);
     // TODO: Handle the grpc response and if OK save data and send response to cli
     Ok(Json(json!({"description": "Created"})))
 }

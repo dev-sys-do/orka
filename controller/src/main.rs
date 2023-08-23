@@ -6,6 +6,7 @@ mod types;
 use crate::client::scheduler;
 
 use tokio::sync::mpsc;
+use tokio::time::{sleep, Duration};
 use tokio_stream::wrappers::ReceiverStream;
 use tonic::{transport::Server, Request, Response, Status};
 
@@ -40,25 +41,19 @@ impl SchedulingService for MySchedulingService {
                 WorkloadStatus {
                     name: "Workload 1".to_string(),
                     status_code: 0,
-                    message: "Workload 1 is running".to_string(),
+                    message: "Your workload is WAITING".to_string(),
                     ..Default::default()
                 },
                 WorkloadStatus {
                     name: "Workload 1".to_string(),
-                    status_code: 0,
-                    message: "Workload 1 is terminated".to_string(),
+                    status_code: 1,
+                    message: "Your workload is RUNNING".to_string(),
                     ..Default::default()
                 },
                 WorkloadStatus {
                     name: "Workload 2".to_string(),
-                    status_code: 0,
-                    message: "Workload 2 is running".to_string(),
-                    ..Default::default()
-                },
-                WorkloadStatus {
-                    name: "Workload 2".to_string(),
-                    status_code: 0,
-                    message: "Workload 2 is terminated".to_string(),
+                    status_code: 2,
+                    message: "Your workload is TERMINATED".to_string(),
                     ..Default::default()
                 },
             ];
@@ -68,6 +63,9 @@ impl SchedulingService for MySchedulingService {
                     .send(Ok(status))
                     .await
                     .expect("Failed to send status to stream");
+
+                // Attendre 10 secondes avant le prochain envoi
+                sleep(Duration::from_secs(10)).await;
             }
 
             sender
