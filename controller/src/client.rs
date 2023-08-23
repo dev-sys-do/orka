@@ -7,8 +7,6 @@ use tonic::Streaming;
 
 use self::scheduler::WorkloadStatus;
 
-use self::scheduler::WorkloadStatus;
-
 pub mod scheduler {
     tonic::include_proto!("orkascheduler");
 }
