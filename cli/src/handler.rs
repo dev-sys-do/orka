@@ -1,23 +1,155 @@
-use crate::args::{
-    config::{GetConfig, SetConfig},
-    crud::{
-        CreateInstance, CreateWorkload, DeleteInstance, DeleteWorkload, GetInstance, GetWorkload,
+use reqwest::Response;
+use serde::de::DeserializeOwned;
+
+use crate::{
+    args::{
+        config::{ConfigResource::ApiFqdn, GetConfig, SetConfig},
+        crud::{
+            CreateInstance, CreateWorkload, DeleteInstance, DeleteWorkload, GetInstance,
+            GetWorkload,
+        },
+        OrkaCtlArgs,
     },
-    OrkaCtlArgs,
+    APP_CONFIG, DISPLAY,
 };
 
-pub fn get_config_value(args: GetConfig) {}
+pub struct Handler {
+    client: reqwest::Client,
+}
 
-pub fn set_config_value(args: SetConfig) {}
+impl Handler {
+    pub fn new() -> Self {
+        Handler {
+            client: reqwest::Client::new(),
+        }
+    }
 
-pub async fn create_workload(args: CreateWorkload) {}
+    pub fn get_config_value(&self, args: GetConfig) {
+        let value: &str = match args.resource {
+            ApiFqdn => &APP_CONFIG.orka_url,
+        };
+        DISPLAY.print_log(value);
+    }
 
-pub async fn create_instance(args: CreateInstance) {}
+    pub fn set_config_value(&self, args: SetConfig) {}
 
-pub async fn get_workload(args: GetWorkload) {}
+    pub async fn create_workload(&self, args: CreateWorkload) {
+        let res = self
+            .client
+            .post(Handler::get_url("workload"))
+            .body("")
+            .send()
+            .await;
 
-pub async fn get_instance(args: GetInstance) {}
+        let result = self
+            .generic_response_handling::<serde_json::Value>(res)
+            .await;
+        if result.is_some() {
+            DISPLAY.print_log(&format!("{:?}", result.unwrap()))
+        }
+    }
 
-pub async fn delete_workload(args: DeleteWorkload) {}
+    pub async fn create_instance(&self, args: CreateInstance) {
+        let res = self
+            .client
+            .post(Handler::get_url("instance"))
+            .body("")
+            .send()
+            .await;
 
-pub async fn delete_instance(args: DeleteInstance) {}
+        let result = self
+            .generic_response_handling::<serde_json::Value>(res)
+            .await;
+        if result.is_some() {
+            DISPLAY.print_log(&format!("{:?}", result.unwrap()))
+        }
+    }
+
+    pub async fn get_workload(&self, args: GetWorkload) {
+        let mut url = Handler::get_url("workload");
+        if args.workload_id.is_some() {
+            url += &format!("/{}", &args.workload_id.unwrap());
+        }
+        let res = self.client.get(url).send().await;
+
+        let result = self
+            .generic_response_handling::<serde_json::Value>(res)
+            .await;
+
+        if result.is_some() {
+            DISPLAY.print_log(&format!("{:?}", result.unwrap()))
+        }
+    }
+
+    pub async fn get_instance(&self, args: GetInstance) {
+        let mut url = Handler::get_url("instance");
+        if args.instance_id.is_some() {
+            url += &format!("/{}", &args.instance_id.unwrap());
+        }
+        let res = self.client.get(url).send().await;
+
+        let result = self
+            .generic_response_handling::<serde_json::Value>(res)
+            .await;
+
+        if result.is_some() {
+            DISPLAY.print_log(&format!("{:?}", result.unwrap()))
+        }
+    }
+
+    pub async fn delete_workload(&self, args: DeleteWorkload) {
+        let url = format!("{}/{}", Handler::get_url("workload"), args.workload_id);
+        let res = self.client.delete(url).send().await;
+
+        let result = self
+            .generic_response_handling::<serde_json::Value>(res)
+            .await;
+
+        if result.is_some() {
+            DISPLAY.print_log(&format!("{:?}", result.unwrap()))
+        }
+    }
+
+    pub async fn delete_instance(&self, args: DeleteInstance) {
+        let url = format!("{}/{}", Handler::get_url("instance"), args.instance_id);
+        let res = self.client.delete(url).send().await;
+
+        let result = self
+            .generic_response_handling::<serde_json::Value>(res)
+            .await;
+
+        if result.is_some() {
+            DISPLAY.print_log(&format!("{:?}", result.unwrap()))
+        }
+    }
+
+    /// Wrapper to display common errors
+    async fn generic_response_handling<T: DeserializeOwned>(
+        &self,
+        response: Result<Response, reqwest::Error>,
+    ) -> Option<T> {
+        match response {
+            Err(err) => DISPLAY.print_error(&format!("{:?}", err)),
+            Ok(response) => {
+                if !response.status().is_success() {
+                    DISPLAY.print_error(&format!(
+                        "The server returned with error {}",
+                        response.status()
+                    ))
+                }
+
+                let json = response.json::<T>().await;
+                match json {
+                    Err(_) => DISPLAY.print_error("The response is not a formatted json !"),
+                    Ok(json) => return Some(json),
+                }
+            }
+        }
+
+        return None;
+    }
+
+    fn get_url(endpoint: &str) -> String {
+        return APP_CONFIG.orka_url.clone() + endpoint;
+    }
+}
