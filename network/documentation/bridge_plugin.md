@@ -31,12 +31,12 @@ The network configuration specifies the name of the bridge to be used. If the br
 - `isGateway` (boolean, optional): assign an IP address to the bridge. Defaults to false.
 - `isDefaultGateway` (boolean, optional): Sets isGateway to true and makes the assigned IP the default route. Defaults to false.
 - `forceAddress` (boolean, optional): Indicates if a new IP address should be set if the previous value has been changed. Defaults to false.
-- ipMasq (boolean, optional): set up IP Masquerade on the host for traffic originating from this network and destined outside of it. Defaults to false.
+- `ipMasq` (boolean, optional): set up IP Masquerade on the host for traffic originating from this network and destined outside of it. Defaults to false.
 - `mtu` (integer, optional): explicitly set MTU to the specified value. Defaults to the value chosen by the kernel.
-- hairpinMode (boolean, optional): set hairpin mode for interfaces on the bridge. Defaults to false.
+- `hairpinMode` (boolean, optional): set hairpin mode for interfaces on the bridge. Defaults to false.
 - `ipam` (dictionary, required): IPAM configuration to be used for this network. For L2-only network, create empty dictionary.
 - `promiscMode` (boolean, optional): set promiscuous mode on the bridge. Defaults to false.
-- vlan (int, optional): assign VLAN tag. Defaults to none.
+- `vlan` (int, optional): assign VLAN tag. Defaults to none.
 - `preserveDefaultVlan` (boolean, optional): indicates whether the default vlan must be preserved on the veth end connected to the bridge. Defaults to true.
 - `vlanTrunk` (list, optional): assign VLAN trunk tag. Defaults to none.
 - `enabledad` (boolean, optional): enables duplicate address detection for the container side veth. Defaults to false.
@@ -86,5 +86,5 @@ CNI defines 4 operations: `ADD`, `DEL`, `CHECK`, and `VERSION`. These are passed
 ### Getting started
 
 ```bash
-cat bridge.test.conf | CNI_COMMAND=ADD CNI_CONTAINERID=1111 CNI_IFNAME=toto CNI_NETNS=2222 ./target/debug/bridge
+cat bridge.test.conf | CNI_COMMAND=ADD CNI_CONTAINERID=1111 CNI_IFNAME=toto CNI_NETNS=2222 ./bridge
 ```

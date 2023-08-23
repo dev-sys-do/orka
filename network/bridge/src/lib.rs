@@ -2,6 +2,8 @@ pub mod links;
 
 use cni_plugin::{config::NetworkConfig, error::CniError};
 use links::bridge::Bridge;
+use serde_json::json;
+use std::iter::Iterator;
 use std::path::PathBuf;
 
 pub async fn cmd_add(
@@ -11,33 +13,78 @@ pub async fn cmd_add(
     path: Vec<PathBuf>,
     mut config: NetworkConfig,
 ) -> Result<(), CniError> {
-    let mut success: bool = false;
+    // let mut success: bool = false;
 
-    if let Some(v) = config.specific.get(&"isDefaultGateway".to_string()) {
-        config.specific.insert("isGateway".to_string(), v.clone());
+    if let Some(json!(true)) = config.specific.get("isDefaultGateway") {
+        config.specific.insert("isGateway".to_string(), json!(true));
     }
 
-    let is_hairpin_mode: bool = config
+    let hairpin_mode: bool = config
         .specific
         .get("hairpinMode")
         .and_then(|value| value.as_bool())
         .unwrap_or(false);
-    let is_promisc_mode: bool = config
+    let promisc_mode: bool = config
         .specific
         .get("promiscMode")
         .and_then(|value| value.as_bool())
         .unwrap_or(false);
-
-    if is_hairpin_mode && is_promisc_mode {
-        return Err(CniError::Generic(
-            "Cannot set hairpin mode and promiscuous mode at the same time".into(),
-        ));
+    if hairpin_mode && promisc_mode {
+        return Err(CniError::Generic(format!(
+            "[ORKANET ERROR]: Cannot set hairpin mode and promiscuous mode at the same time. (fn cmd_add)\n"
+        )));
     }
 
-    let br: Bridge = match Bridge::setup_bridge(config).await {
+    let mtu: i64 = config
+        .specific
+        .get("mtu")
+        .and_then(|value| value.as_i64())
+        .unwrap_or(1500);
+    if !config.specific.contains_key("mtu") {
+        config.specific.insert("mtu".to_string(), json!(mtu));
+    }
+
+    let br: Bridge = match Bridge::setup_bridge(config.clone()).await {
         Ok(br) => br,
-        Err(err) => return Err(CniError::Generic(format!("{:?}", err))),
+        Err(err) => return Err(err),
     };
+
+    let vlan_id: Option<i64> = config.specific.get("vlan").and_then(|value| value.as_i64());
+    let vlans = config
+        .specific
+        .get("vlanTrunk")
+        .and_then(|value| value.as_array())
+        .map(|array| {
+            array
+                .iter()
+                .filter_map(|v| v.as_i64())
+                .collect::<Vec<i64>>()
+        });
+    let preserve_default_vlan: bool = config
+        .specific
+        .get("preserveDefaultVlan")
+        .and_then(|value| value.as_bool())
+        .unwrap_or(false);
+    let mac: Option<&str> = config
+        .specific
+        .get("preserveDefaultVlan")
+        .and_then(|value| value.as_str());
+
+    if let Err(err) = br
+        .setup_veth(
+            netns,
+            ifname,
+            mtu,
+            hairpin_mode,
+            vlan_id,
+            vlans,
+            preserve_default_vlan,
+            mac,
+        )
+        .await
+    {
+        return Err(err);
+    }
 
     // netns, err := ns.GetNS(args.Netns)
     // if err != nil {
