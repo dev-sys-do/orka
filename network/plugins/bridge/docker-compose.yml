@@ -1,0 +1,12 @@
+services:
+  brdige:
+    build: .
+    environment:
+      CNI_COMMAND: ADD
+      CNI_CONTAINERID: 1111
+      CNI_IFNAME: eth0
+      CNI_NETNS: /run/netns/red
+    privileged: true
+    # cap_add:
+    #   - NET_ADMIN
+    #   - SYS_ADMIN
