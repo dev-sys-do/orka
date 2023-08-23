@@ -2,17 +2,12 @@ use clap::Parser;
 use handler::Handler;
 use std::sync::{Arc, Mutex};
 
-use crate::{
-    args::{CommandType, OrkaCtlArgs},
-    config::Config,
-    display::Display,
-};
-use lazy_static::lazy_static;
-
+use crate::args::{CommandType, OrkaArgs};
+use crate::workloads::file::read_file;
 mod args;
-mod config;
-mod display;
-mod handler;
+mod workloads;
+
+
 
 lazy_static! {
     #[derive(Debug)]
@@ -23,14 +18,10 @@ lazy_static! {
 #[tokio::main]
 async fn main() {
     println!("Hello, cli!");
-    let args = OrkaCtlArgs::parse();
+    /*
+    let args = OrkaArgs::parse();
     println!("{:?}", args);
-    execute(args).await
-}
-
-/// Call the proper handler function
-pub async fn execute(args: OrkaCtlArgs) {
-    let handler = Handler::new();
+    
     match args.command {
         crate::args::CommandType::Config(config_type) => match config_type.command {
             crate::args::config::ConfigCommandType::Get(config) => handler.get_config_value(config),
@@ -57,4 +48,9 @@ pub async fn execute(args: OrkaCtlArgs) {
             }
         },
     }
+    */
+
+    let filepath : &str = "examples/network.yaml";
+
+    read_file(&filepath);
 }
