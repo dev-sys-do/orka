@@ -2,7 +2,7 @@ use crate::types::workload_request::WorkloadRequest;
 use crate::{
     client::{
         scheduler::{
-            workload::{Resources, Type},
+            workload::Type,
             SchedulingRequest, Workload,
         },
         Client,
@@ -13,6 +13,7 @@ use axum::Json;
 use log::info;
 use serde_json::{self, json, Value};
 use validator::Validate;
+use crate::client::scheduler::workload;
 
 pub async fn get_workloads(_body: String) -> anyhow::Result<Json<Value>, ApiError> {
     tokio::spawn(async move {
@@ -58,11 +59,7 @@ pub async fn post_workload(body: String) -> anyhow::Result<Json<Value>, ApiError
         r#type: Type::Container.into(),
         image: json_body.workload.image,
         environment,
-        resource_limits: Some(Resources {
-            cpu: Some(1_i32),
-            memory: Some(1_i32),
-            disk: Some(1_i32),
-        }),
+        resource_limits: Some(workload::Resources::default()),
     };
 
     let request = SchedulingRequest {

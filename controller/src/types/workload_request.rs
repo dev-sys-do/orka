@@ -10,7 +10,6 @@ pub struct WorkloadRequest {
 #[derive(Debug, Deserialize, Serialize)]
 pub enum WorkloadKind {
     Container,
-    Baremetal,
 }
 
 #[derive(Debug, Deserialize, Serialize)]
@@ -43,7 +42,6 @@ pub struct Workload {
 fn validate_workload_kind(kind: &WorkloadKind) -> Result<(), ValidationError> {
     match kind {
         WorkloadKind::Container => Ok(()),
-        WorkloadKind::Baremetal => Ok(()),
     }
 }
 
