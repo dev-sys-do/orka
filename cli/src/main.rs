@@ -50,7 +50,10 @@ async fn main() {
     }
     */
 
-    let filepath : &str = "examples/container.yaml";
+    let filepath : String = String::from("examples/c.yaml");
 
-    read_file(&filepath);
+    match read_file(filepath) {
+        Ok(json) => println!("{:?}", json),
+        Err(error) => println!("{:?}", error)
+    }
 }

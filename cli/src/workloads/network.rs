@@ -1,6 +1,6 @@
 use serde::{Serialize, Deserialize};
 use std::collections::HashMap;
-use crate::workloads::file::{Kind};
+use crate::workloads::file::{Kind, CustomError};
 use regex::Regex;
 use validator::{Validate};
 
@@ -40,13 +40,13 @@ fn max_mask() -> u32{
 
 
 
-pub fn verify_network(networks: &Vec<HashMap<String, IpAdress>>) -> bool {
+pub fn verify_network(networks: &Vec<HashMap<String, IpAdress>>) -> Option<CustomError> {
     let re = Regex::new(r"^([0-9]{1,3})\.([0-9]{1,3})\.([0-9]{1,3})\.([0-9]{1,3})$").unwrap();
     for hashmap in networks {
         for (key, ip_address) in hashmap {
             // verify ip address
             let Some(_) = re.captures(key) else {
-                panic!("{:?} is not a valid ip address.", key);
+                return Some(CustomError::InvalidIpAddress(key.to_string()));
             };
 
             // verify ports
@@ -55,11 +55,11 @@ pub fn verify_network(networks: &Vec<HashMap<String, IpAdress>>) -> bool {
                 for p in ports {
                     let port_number: u32 = p.parse().unwrap();
                         if port_number > 65535 {
-                            panic!("Port {:?} outside of port range", p)
+                            return Some(CustomError::OutsidePortRange(port_number));
                         }
                 }
             }
         }
     }
-    return true;
+    return None;
 }

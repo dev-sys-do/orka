@@ -1,4 +1,4 @@
-version: 1
+
 workload:
     kind: network               
     name: mfa_network           # Unique across all tenants
