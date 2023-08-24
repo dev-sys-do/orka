@@ -1,21 +1,13 @@
 # Orka SDN
 
-## Getting started (dev)
+The main plugin used by the runtime (or the CRI) is `orka-cni`,
+this plugin will then delegate the creation of interfaces and IPAM
+to other plugins like `bridge` and `host-local`.
 
-To test our CNI plugin, we will use [`cnitool`](https://github.com/containernetworking/cni/tree/main/cnitool),
-a tool in go to execute CNI configuration.
+The inspiration for this plugin comes from the [cni plugin](https://github.com/flannel-io/cni-plugin)
+of flannel.
 
-> Install it easily with: `make cnitool-install`
+## Getting started
 
-To test the plugin, you can execute:
-
-```sh
-make cni-setup
-make cni-add # or any other CNI method you want to use
-```
-
-To clean the created resources:
-
-```sh
-make cni-clean
-```
+To test our CNI plugin, you can use [`cnitool`](https://github.com/containernetworking/cni/tree/main/cnitool),
+it is a tool in go to execute CNI configuration.
