@@ -1,7 +1,15 @@
 version: 1                     # Default to last supported version 
 workload:
-    kind: container            # "container", "network" 
-    name: postgres             
+    kind: container            # "container"
+    name: postgres 
+    port: 80            
     networks:
+        - "network_name_1"
+        - "mfa_network"
     environment:
+        - key: value
+        - key2: value2
+        - keyX: valueX
+
+    registry: ghcr # Default to dockerhub, optional
     image: postgres:15

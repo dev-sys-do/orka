@@ -20,6 +20,7 @@ pub struct WorkloadContainerFile {
 #[derive(Serialize, Deserialize)]
 struct Container {
     kind: Kind,
+    port: String,
     name: String,
     #[serde(default)]
     environment: Vec<HashMap<String, String>>,

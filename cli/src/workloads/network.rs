@@ -46,8 +46,7 @@ pub fn verify_network(networks: &Vec<HashMap<String, IpAdress>>) -> bool {
         for (key, ip_address) in hashmap {
             // verify ip address
             let Some(_) = re.captures(key) else {
-                println!("{:?} is not a valid ip address.", key);
-                return false;
+                panic!("{:?} is not a valid ip address.", key);
             };
 
             // verify ports
@@ -56,8 +55,7 @@ pub fn verify_network(networks: &Vec<HashMap<String, IpAdress>>) -> bool {
                 for p in ports {
                     let port_number: u32 = p.parse().unwrap();
                         if port_number > 65535 {
-                            println!("Port {:?} outside of port range", p);
-                            return false;
+                            panic!("Port {:?} outside of port range", p)
                         }
                 }
             }

@@ -42,7 +42,6 @@ pub fn read_file(filepath : &str) -> Option<serde_json::Value> {
             verify_network(&network.workload.egress);
             verify_network(&network.workload.ingress);
             let json : serde_json::Value = serde_yaml::from_str(&networkstring).unwrap();
-            println!("Json:\n{:?}", json);
 
             // return json
             return Some(json);
@@ -54,7 +53,6 @@ pub fn read_file(filepath : &str) -> Option<serde_json::Value> {
             // read verified yaml structure to json
             let containerstring : String = serde_yaml::to_string(&container).unwrap();
             let json : serde_json::Value = serde_yaml::from_str(&containerstring).unwrap();
-            println!("Json:\n{:?}", json);
 
             // return json
             return Some(json);
