@@ -2,9 +2,9 @@ use clap::Parser;
 use handler::Handler;
 use std::sync::{Arc, Mutex};
 
-use crate::args::{CommandType, OrkaArgs};
+//use crate::args::{CommandType, OrkaArgs};
 use crate::workloads::file::read_file;
-mod args;
+//mod args;
 mod workloads;
 
 
@@ -50,7 +50,7 @@ async fn main() {
     }
     */
 
-    let filepath : &str = "examples/network.yaml";
+    let filepath : &str = "examples/container.yaml";
 
     read_file(&filepath);
 }

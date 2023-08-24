@@ -1,6 +1,6 @@
 version: 1                     # Default to last supported version 
 workload:
-    kind: container            # "container", "bare-metal" 
+    kind: container            # "container", "network" 
     name: postgres             
     networks:
         - "network_name_1"

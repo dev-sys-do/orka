@@ -12,7 +12,7 @@ enum Registry {
 
 #[derive(Serialize, Deserialize)]
 pub struct WorkloadContainerFile {
-    version: u32,
+    version: String,
     workload: Container
 }
 
@@ -21,8 +21,15 @@ pub struct WorkloadContainerFile {
 struct Container {
     kind: Kind,
     name: String,
+    #[serde(default)]
     environment: Vec<HashMap<String, String>>,
+    #[serde(default)]
     networks: Vec<String>,
+    #[serde(default = "defaultRegistry")]
     registry: Registry,
     image: String
+}
+
+fn defaultRegistry() -> Registry {
+    return Registry.Dockerhub
 }

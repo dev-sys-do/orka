@@ -6,13 +6,18 @@ workload:
         - "workload_name"
     egress:
         - 10.0.0.0:
-            mask: "32"
+            mask: 32
             ports: 
                 - "80-90"       # A range of ports, 80 to 90 included
                 - "3000"
+        - 10.0.0.1:
+            mask: 31
+            ports: 
+                - "80-10"       # A range of ports, 80 to 90 included
+                - "3100"
     ingress:
         - 10.0.0.0:
-            mask: "24"
+            mask: 24
             ports:
                 - "80-90"
                 - "3000"
