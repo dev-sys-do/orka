@@ -2,7 +2,7 @@ use serde::{Serialize, Deserialize};
 use std::collections::HashMap;
 use crate::workloads::file::{Kind};
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Debug)]
 #[serde(rename_all = "snake_case")]
 enum Registry {
     Ghcr,
@@ -25,11 +25,12 @@ struct Container {
     environment: Vec<HashMap<String, String>>,
     #[serde(default)]
     networks: Vec<String>,
-    #[serde(default = "defaultRegistry")]
+    #[serde(default = "Registry::default")]
     registry: Registry,
     image: String
 }
 
-fn defaultRegistry() -> Registry {
-    return Registry.Dockerhub
+
+impl Registry {
+    fn default() -> Self { Registry::Dockerhub }
 }
