@@ -79,10 +79,7 @@ impl Config {
     fn get_config_path() -> PathBuf {
         // FIXME let's hope the home env is defined
         let home = home::home_dir().unwrap();
-        let config_location = format!("{}/.config/orka", home.as_path().display());
-        let config_file_location = format!("{}/config.yaml", config_location);
-
-        return PathBuf::from(config_file_location);
+        return home.join(".config").join("orka").join("config.yaml");
     }
 
     pub fn new_wrapped() -> Arc<Mutex<Config>> {
