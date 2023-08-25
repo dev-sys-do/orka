@@ -20,7 +20,6 @@ pub enum WorkloadRegistry {
     Podman,
     Ghcr,
 }
-
 #[derive(Debug, Validate, Deserialize, Serialize, Clone)]
 pub struct Workload {
     #[validate(custom = "validate_workload_kind")]

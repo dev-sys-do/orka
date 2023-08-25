@@ -2,7 +2,9 @@ use scheduler::scheduling_service_client::SchedulingServiceClient;
 use scheduler::SchedulingRequest;
 use tonic::Streaming;
 use tonic::transport::Channel;
-use log::trace;
+use tonic::Streaming;
+
+use self::scheduler::WorkloadStatus;
 
 use self::scheduler::WorkloadStatus;
 
@@ -33,4 +35,3 @@ impl Client {
         Ok(stream)
     }
 }
-
