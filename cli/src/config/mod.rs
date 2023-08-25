@@ -1,6 +1,7 @@
 use std::fs;
 use std::path::PathBuf;
 use std::process::exit;
+use std::sync::{Arc, Mutex};
 
 use serde::{Deserialize, Serialize};
 
@@ -14,7 +15,7 @@ pub struct Config {
 
 impl Config {
     /// Initialise the configuration
-    pub fn new() -> Self {
+    fn new() -> Self {
         let config_file_location = Config::get_config_path();
         if !config_file_location.exists() {
             Config::generate_default_config()
@@ -82,5 +83,14 @@ impl Config {
         let config_file_location = format!("{}/config.yaml", config_location);
 
         return PathBuf::from(config_file_location);
+    }
+
+    pub fn new_wrapped() -> Arc<Mutex<Config>> {
+        let config = Config::new();
+        Arc::new(Mutex::new(config))
+    }
+
+    pub fn set_orka_url(&mut self, new_url: &str) {
+        self.orka_url = new_url.to_string();
     }
 }
