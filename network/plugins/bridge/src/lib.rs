@@ -7,10 +7,10 @@ use std::iter::Iterator;
 use std::path::PathBuf;
 
 pub async fn cmd_add(
-    container_id: String,
+    _container_id: String,
     ifname: String,
     netns: PathBuf,
-    path: Vec<PathBuf>,
+    _path: Vec<PathBuf>,
     mut config: NetworkConfig,
 ) -> Result<(), CniError> {
     // let mut success: bool = false;
@@ -70,7 +70,7 @@ pub async fn cmd_add(
         .get("preserveDefaultVlan")
         .and_then(|value| value.as_str());
 
-    if let Err(err) = br
+    let (_host_interface, _container_interface) = match br
         .setup_veth(
             netns,
             ifname,
@@ -83,8 +83,9 @@ pub async fn cmd_add(
         )
         .await
     {
-        return Err(err);
-    }
+        Ok(res) => res,
+        Err(err) => return Err(err),
+    };
 
     // netns, err := ns.GetNS(args.Netns)
     // if err != nil {
@@ -117,13 +118,7 @@ pub async fn cmd_check(
     path: Vec<PathBuf>,
     config: NetworkConfig,
 ) -> Result<(), CniError> {
-    // let mut success: bool = false;
-    print!(
-        "NETWORK CONFIG :\n{}",
-        config.specific.get(&"bridge".to_string()).unwrap()
-    );
-    // let n = Self::load_net_conf()
-    Ok(())
+    todo!();
 }
 
 pub async fn cmd_del(
@@ -133,11 +128,5 @@ pub async fn cmd_del(
     path: Vec<PathBuf>,
     config: NetworkConfig,
 ) -> Result<(), CniError> {
-    // let mut success: bool = false;
-    print!(
-        "NETWORK CONFIG :\n{}",
-        config.specific.get(&"bridge".to_string()).unwrap()
-    );
-    // let n = Self::load_net_conf()
-    Ok(())
+    todo!();
 }

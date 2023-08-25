@@ -2,7 +2,6 @@ FROM rust:1.70 AS builder
 WORKDIR /
 COPY . .
 RUN cargo install --path .
-CMD [ "sleep", "infinity" ]
 
 
 FROM ubuntu:22.04 AS runner

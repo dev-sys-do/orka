@@ -19,5 +19,5 @@ pub fn random_veth_name() -> String {
     let hash_result = hasher.finalize();
     let hash_prefix = format!("{:x}", hash_result);
 
-    format!("veth_{}", &hash_prefix[..8])
+    format!("veth{}", &hash_prefix[..8])
 }

@@ -129,91 +129,55 @@ impl Bridge {
         netns: PathBuf,
         ifname: String,
         mtu: i64,
-        hairpin_mode: bool,
-        vlan_id: Option<i64>,
-        vlans: Option<Vec<i64>>,
-        preserve_default_vlan: bool,
+        _hairpin_mode: bool,
+        _vlan_id: Option<i64>,
+        _vlans: Option<Vec<i64>>,
+        _preserve_default_vlan: bool,
         mac: Option<&str>,
-    ) -> Result<(), CniError> {
-        let netns_path = match netns.as_os_str().to_os_string().into_string() {
-            Ok(path) => path,
-            Err(_) => {
-                return Err(CniError::Generic(format!(
-                "[ORKANET ERROR]: Failed to convert container `netns` PathBuf to String. (fn setup_veth)\n"
-            )))
-            }
-        };
-        // Change namespace
-        if let Err(err) = NetworkNamespace::unshare_processing(netns_path.clone()) {
+    ) -> Result<(String, String), CniError> {
+        // Handle for host
+        let (connection_host, handle_host, _) = rtnetlink::new_connection().unwrap();
+        tokio::spawn(connection_host);
+
+        // WARNING ! [Change namespace from host to container]
+        if let Err(err) =
+            NetworkNamespace::unshare_processing(String::from(netns.to_string_lossy()))
+        {
             return Err(CniError::Generic(format!(
-                "[ORKANET ERROR]: Could not unshare processing to netns {}. (fn setup_veth)\n{}\n",
-                netns_path, err
+                "[ORKANET ERROR]: Could not unshare processing to netns {:?}. (fn setup_veth)\n{}\n",
+                netns, err
             )));
         }
 
-        // Start connection after namespace move
-        let (connection, handle, _) = rtnetlink::new_connection().unwrap();
-        tokio::spawn(connection);
-
-        let host_ns_path: String = format!("/proc/1/ns/net");
-        // let host_ns: PathBuf = match fs::read_link(host_ns_path) {
-        //     Ok(path) => path,
-        //     Err(_) => {
-        //         return Err(CniError::Generic(format!(
-        //         "[ORKANET ERROR]: Failed to convert host`netns` PathBuf to String. (fn setup_veth)\n"
-        //     )))
-        //     }
-        // };
+        // Handle for container
+        let (connection_cont, handle_cont, _) = rtnetlink::new_connection().unwrap();
+        tokio::spawn(connection_cont);
 
         // create the veth pair in the container and move host end into host netns
-        let (_, _) = match Veth::setup_veth(&handle, ifname, mtu, mac, host_ns_path).await {
-            Ok(res) => res,
-            Err(err) => return Err(err),
-        };
+        let host_ns: PathBuf = PathBuf::from("/proc/1/ns/net");
+        let (host_veth_name, cont_veth) =
+            match Veth::setup_veth(&handle_host, &handle_cont, ifname, mtu, mac, host_ns).await {
+                Ok(res) => res,
+                Err(err) => return Err(err),
+            };
 
-        // need to lookup hostVeth again as its index has changed during ns move
-        // let (host_veth, container_veth) = veth::setup_veth(ifname, mtu, mac, host_ns);
+        // connect host veth end to the bridge
+        if let Err(err) = Self::link_set_master(
+            &handle_host,
+            host_veth_name.clone(),
+            self.linkattrs.name.clone(),
+        )
+        .await
+        {
+            return Err(err);
+        }
 
-        Ok(())
+        // ? set hairpin mode ?
+        // ? remove default vlan ?
+        // ? Currently bridge CNI only support access port(untagged only) or trunk port(tagged only) ?
+
+        Ok((host_veth_name, cont_veth.linkattrs.name))
     }
-
-    // pub async fn assign_veth(handle: &Handle, ifname_bridge: &str, ifname_veth: &str) {
-    //     let mut links = handle
-    //         .link()
-    //         .get()
-    //         .match_name(ifname_bridge.to_owned())
-    //         .execute();
-
-    //     let master_index = match links.try_next().await {
-    //         Ok(Some(link)) => link.header.index,
-    //         _ => panic!("[ORKANET]: Error get index master {}.", ifname_bridge),
-    //     };
-
-    //     let mut links = handle
-    //         .link()
-    //         .get()
-    //         .match_name(ifname_veth.to_owned())
-    //         .execute();
-    //     match links.try_next().await {
-    //         Ok(Some(link)) => {
-    //             handle
-    //                 .link()
-    //                 .set(link.header.index)
-    //                 .master(master_index)
-    //                 .execute()
-    //                 .await
-    //                 .unwrap();
-    //         }
-    //         Ok(None) => panic!(
-    //             "[ORKANET]: Error assign veth {} to master {}.",
-    //             ifname_veth, ifname_bridge
-    //         ),
-    //         Err(_) => panic!(
-    //             "[ORKANET]: Error assign veth {} to master {}.",
-    //             ifname_veth, ifname_bridge
-    //         ),
-    //     }
-    // }
 
     // Attach ipv4 to interface
     // async fn attach_ip(handle: &Handle, ifname: &str, ipaddr: IpAddr, mask: u8) {

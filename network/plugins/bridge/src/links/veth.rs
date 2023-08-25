@@ -3,14 +3,16 @@ use super::utils;
 use async_trait::async_trait;
 use cni_plugin::error::CniError;
 use futures::stream::TryStreamExt;
-use rtnetlink::{Handle, NetworkNamespace};
-use std::process::Command;
+use nix::fcntl::{open, OFlag};
+use nix::sys::stat::Mode;
+use rtnetlink::Handle;
+use std::path::PathBuf;
 
 #[derive(Clone)]
 pub struct Veth {
-    linkattrs: LinkAttrs,
-    peer_name: String,
-    peer_namespace: String,
+    pub linkattrs: LinkAttrs,
+    pub peer_name: String,
+    peer_namespace: PathBuf,
 }
 
 #[async_trait]
@@ -29,6 +31,20 @@ impl Link for Veth {
             )));
         }
 
+        let fd = match open(
+            self.peer_namespace.as_path(),
+            OFlag::O_RDONLY,
+            Mode::empty(),
+        ) {
+            Ok(raw_fd) => raw_fd,
+            Err(err) => {
+                return Err(CniError::Generic(format!(
+                "[ORKANET]: Failed to convert peer namespace to RawFd: {:?}. (fn link_add)\n{}\n",
+                self.peer_namespace, err
+            )))
+            }
+        };
+
         let mut links = handle
             .link()
             .get()
@@ -38,7 +54,7 @@ impl Link for Veth {
             Ok(Some(link)) => handle
                 .link()
                 .set(link.header.index)
-                .setns_by_fd(1)
+                .setns_by_fd(fd)
                 .execute()
                 .await
                 .map_err(|err| {
@@ -61,53 +77,41 @@ impl Veth {
     // devices and move the host-side veth into the provided hostNS namespace.
     // On success, SetupVeth returns (hostVeth, containerVeth, nil)
     pub async fn setup_veth(
-        handle: &Handle,
+        handle_host: &Handle,
+        handle_cont: &Handle,
         cont_veth_name: String,
         mtu: i64,
         cont_veth_mac: Option<&str>,
-        host_ns_path: String,
+        host_ns: PathBuf,
     ) -> Result<(String, Self), CniError> {
-        // TEST
-        let output = Command::new("ip")
-            .args(&["a"])
-            .output()
-            .expect("Failed to execute command");
-
-        if output.status.success() {
-            let result = String::from_utf8_lossy(&output.stdout);
-            println!("Command output:\n{}", result);
-        } else {
-            let error = String::from_utf8_lossy(&output.stderr);
-            println!("Command failed:\n{}", error);
-        }
-        // TEST END
-
         Self::setup_veth_with_name(
-            handle,
+            handle_host,
+            handle_cont,
             cont_veth_name,
             String::new(),
             mtu,
             cont_veth_mac,
-            host_ns_path,
+            host_ns,
         )
         .await
     }
 
     async fn setup_veth_with_name(
-        handle: &Handle,
+        handle_host: &Handle,
+        handle_cont: &Handle,
         cont_veth_name: String,
         host_veth_name: String,
         mtu: i64,
         cont_veth_mac: Option<&str>,
-        host_ns_path: String,
+        host_ns: PathBuf,
     ) -> Result<(String, Self), CniError> {
         let (host_veth_name, cont_veth) = match Self::make_veth(
-            handle,
+            handle_cont,
             cont_veth_name,
-            String::new(),
+            host_veth_name,
             mtu,
             cont_veth_mac,
-            host_ns_path.clone(),
+            host_ns.clone(),
         )
         .await
         {
@@ -115,18 +119,7 @@ impl Veth {
             Err(err) => return Err(err),
         };
 
-        // Move to host ns
-        if let Err(err) = NetworkNamespace::unshare_processing(host_ns_path.clone()) {
-            return Err(CniError::Generic(format!(
-                "[ORKANET ERROR]: Could not unshare processing to netns {}. (fn setup_veth)\n{}\n",
-                host_ns_path, err
-            )));
-        }
-
-        let (connection, handle, _) = rtnetlink::new_connection().unwrap();
-        tokio::spawn(connection);
-
-        if let Err(err) = Veth::link_set_up(&handle, host_veth_name.clone()).await {
+        if let Err(err) = Veth::link_set_up(&handle_host, host_veth_name.clone()).await {
             return Err(err);
         }
 
@@ -139,26 +132,20 @@ impl Veth {
         veth_peer_name: String,
         mtu: i64,
         mac: Option<&str>,
-        host_ns_path: String,
+        host_ns: PathBuf,
     ) -> Result<(String, Self), CniError> {
         let peer_name: String = if veth_peer_name.is_empty() {
             utils::random_veth_name()
         } else {
             veth_peer_name
         };
-        let veth: Veth = match Self::make_veth_pair(
-            handle,
-            name.clone(),
-            peer_name.clone(),
-            mtu,
-            mac,
-            host_ns_path,
-        )
-        .await
-        {
-            Ok(veth) => veth,
-            Err(err) => return Err(err),
-        };
+        let veth: Veth =
+            match Self::make_veth_pair(handle, name.clone(), peer_name.clone(), mtu, mac, host_ns)
+                .await
+            {
+                Ok(veth) => veth,
+                Err(err) => return Err(err),
+            };
 
         Ok((peer_name, veth))
     }
@@ -169,7 +156,7 @@ impl Veth {
         peer: String,
         mtu: i64,
         mac: Option<&str>,
-        host_ns_path: String,
+        host_ns: PathBuf,
     ) -> Result<Self, CniError> {
         let mut veth: Self = Veth {
             linkattrs: LinkAttrs {
@@ -179,7 +166,7 @@ impl Veth {
                 hardware_addr: Option::None,
             },
             peer_name: peer,
-            peer_namespace: host_ns_path,
+            peer_namespace: host_ns,
         };
         if let Some(addr) = mac {
             let _ = veth.linkattrs.hardware_addr.insert(addr.to_owned());

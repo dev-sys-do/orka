@@ -20,6 +20,49 @@ pub struct LinkAttrs {
 pub trait Link {
     async fn link_add(&self, handle: &Handle) -> Result<(), CniError>;
 
+    async fn link_set_master(
+        handle: &Handle,
+        veth_peer_name: String,
+        br_name: String,
+    ) -> Result<(), CniError> {
+        let mut links = handle.link().get().match_name(br_name.clone()).execute();
+        let master_index = match links.try_next().await {
+            Ok(Some(link)) => link.header.index,
+            _ => {
+                return Err(CniError::Generic(format!(
+                    "[ORKANET ERROR]: Cannot get bridge interface id: {}. (fn link_set_master)\n",
+                    br_name
+                )))
+            }
+        };
+
+        let mut links = handle
+            .link()
+            .get()
+            .match_name(veth_peer_name.clone())
+            .execute();
+        match links.try_next().await {
+            Ok(Some(link)) => {
+                handle
+                    .link()
+                    .set(link.header.index)
+                    .master(master_index)
+                    .execute()
+                    .await
+                    .map_err(|err| {
+                        CniError::Generic(format!(
+                            "[ORKANET ERROR]: Failed to connect {} to bridge {}. (fn link_set_master)\n{}\n",
+                            veth_peer_name, br_name, err
+                        ))
+                    })
+            }
+            _ => Err(CniError::Generic(format!(
+                "[ORKANET ERROR]: Failed to connect {} to bridge {}. (fn link_set_master)\n",
+                veth_peer_name, br_name
+            ))),
+        }
+    }
+
     async fn link_promisc_on(handle: &Handle, name: String) -> Result<(), CniError> {
         let mut links = handle.link().get().match_name(name.clone()).execute();
         match links.try_next().await {

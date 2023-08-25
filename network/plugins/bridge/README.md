@@ -5,5 +5,5 @@
 ```bash
 docker compose up --build -d
 docker exec -it bridge-brdige-1 /bin/bash
-cat $NETCONFPATH/10-mynet.conf | $CNI_PATH/bridge
+cat $NETCONFPATH/bridge.test.conf | $CNI_PATH/bridge
 ```
