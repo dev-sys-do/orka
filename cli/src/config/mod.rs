@@ -21,7 +21,7 @@ impl Config {
             Config::generate_default_config()
         }
 
-        let file = match fs::File::open(config_file_location.clone()) {
+        let file = match fs::File::open(config_file_location) {
             Ok(file) => file,
             Err(e) => {
                 println!("{}", e);
@@ -29,15 +29,13 @@ impl Config {
             }
         };
 
-        let config: Config = match serde_yaml::from_reader(file) {
+        match serde_yaml::from_reader(file) {
             Ok(conf) => conf,
             Err(e) => {
                 println!("Error parsing configuration file: {}", e);
                 exit(-1)
             }
-        };
-
-        return config;
+        }
     }
 
     /// Save the current configuration
@@ -50,7 +48,6 @@ impl Config {
                     Ok(_) => (),
                     Err(_) => DISPLAY.print_error("Failed to save config !"),
                 }
-                return;
             }
         }
     }
@@ -66,7 +63,7 @@ impl Config {
             }
         }
 
-        match fs::write(file_location.clone(), "orkaUrl: http://localhost\n") {
+        match fs::write(file_location, "orkaUrl: http://localhost\n") {
             Ok(_) => (),
             Err(e) => {
                 println!("{}", e);
@@ -79,7 +76,7 @@ impl Config {
     fn get_config_path() -> PathBuf {
         // FIXME let's hope the home env is defined
         let home = home::home_dir().unwrap();
-        return home.join(".config").join("orka").join("config.yaml");
+        home.join(".config").join("orka").join("config.yaml")
     }
 
     pub fn new_wrapped() -> Arc<Mutex<Config>> {
