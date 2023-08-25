@@ -1,13 +1,25 @@
 use clap::Parser;
 use handler::Handler;
 use std::sync::{Arc, Mutex};
+use crate::{
+    args::{CommandType, OrkaCtlArgs},
+    config::Config,
+    display::Display,
+};
+use lazy_static::lazy_static;
 
-//use crate::args::{CommandType, OrkaArgs};
-use crate::workloads::file::read_file;
-//mod args;
+mod args;
+mod config;
+mod display;
+mod handler;
 mod workloads;
 
 
+lazy_static! {
+    #[derive(Debug)]
+    pub static ref APP_CONFIG: Config = Config::new();
+    pub static ref DISPLAY: Display = Display {};
+}
 
 lazy_static! {
     #[derive(Debug)]
@@ -21,7 +33,12 @@ async fn main() {
     /*
     let args = OrkaArgs::parse();
     println!("{:?}", args);
-    
+    execute(args).await
+}
+
+/// Call the proper handler function
+pub async fn execute(args: OrkaCtlArgs) {
+    let handler = Handler::new();
     match args.command {
         crate::args::CommandType::Config(config_type) => match config_type.command {
             crate::args::config::ConfigCommandType::Get(config) => handler.get_config_value(config),
@@ -47,13 +64,5 @@ async fn main() {
                 handler.delete_instance(instance).await
             }
         },
-    }
-    */
-
-    let filepath : String = String::from("examples/c.yaml");
-
-    match read_file(filepath) {
-        Ok(json) => println!("{:?}", json),
-        Err(error) => println!("{:?}", error)
     }
 }

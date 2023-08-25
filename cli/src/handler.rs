@@ -1,5 +1,6 @@
 use reqwest::Response;
 use serde::de::DeserializeOwned;
+use crate::workloads::file::read_file;
 
 use crate::{
     args::{
@@ -35,19 +36,25 @@ impl Handler {
     pub fn set_config_value(&self, args: SetConfig) {}
 
     pub async fn create_workload(&self, args: CreateWorkload) {
-        let res = self
-            .client
-            .post(Handler::get_url("workload"))
-            .body("")
-            .send()
-            .await;
+        match read_file(args.file_path) {
+            Ok(json) => {
+                let res = self
+                    .client
+                    .post(Handler::get_url("workload"))
+                    .json(&json)
+                    .send()
+                    .await;
 
-        let result = self
-            .generic_response_handling::<serde_json::Value>(res)
-            .await;
-        if result.is_some() {
-            DISPLAY.print_log(&format!("{:?}", result.unwrap()))
+                let result = self
+                    .generic_response_handling::<serde_json::Value>(res)
+                    .await;
+                if result.is_some() {
+                    DISPLAY.print_log(&format!("{:?}", result.unwrap()))
+                }
+            },
+            Err(error) => println!("{:?}", error)
         }
+        
     }
 
     pub async fn create_instance(&self, args: CreateInstance) {

@@ -4,7 +4,7 @@ use crate::workloads::container::{WorkloadContainerFile};
 use crate::workloads::network::{WorkloadNetworkFile, verify_network};
 use thiserror::Error;
 use std::io::ErrorKind::NotFound;
-
+use std::path::PathBuf;
 
 #[derive(Serialize, Deserialize, PartialEq, Debug)]
 #[serde(rename_all = "snake_case")]
@@ -30,7 +30,7 @@ pub enum CustomError {
     #[error("Workload kind must be 'container' or 'network'.")]
     UnknownWorkloadKind,
     #[error("File `{0}` not found")]
-    FileNotFound(String),
+    FileNotFound(PathBuf),
     #[error("Data could not be read from file")]
     FileCouldNotBeenRead,
     #[error("`{0}`")]
@@ -43,7 +43,7 @@ pub enum CustomError {
 
 
 // return result
-pub fn read_file(filepath : String) -> Result<serde_json::Value, CustomError> {
+pub fn read_file(filepath : PathBuf) -> Result<serde_json::Value, CustomError> {
     // read file
     let contents = match fs::read_to_string(&filepath) {
         Ok(file) => file,
