@@ -37,7 +37,7 @@ message WorkloadStatus {
             TERMINATED = 2;
         }
 
-        uint32 code = 1;
+        StatusCode code = 1;
         optional string message = 2;
     }
 

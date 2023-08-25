@@ -6,6 +6,7 @@ mod types;
 
 use crate::client::scheduler;
 
+use client::scheduler::WorkloadInstance;
 use store::kv_manager::{KeyValueStore, DB_BATCH};
 use tokio::sync::mpsc;
 use tokio_stream::wrappers::ReceiverStream;
@@ -13,7 +14,7 @@ use tonic::{transport::Server, Request, Response, Status};
 
 use axum::Router;
 use scheduler::scheduling_service_server::{SchedulingService, SchedulingServiceServer};
-use scheduler::{SchedulingRequest, WorkloadStatus};
+use scheduler::{SchedulingRequest, WorkloadStatus, workload_status::Status as DeploymentStatus};
 use std::net::SocketAddr;
 use std::sync::Arc;
 use std::thread;
@@ -21,7 +22,7 @@ use std::time::Duration;
 use tokio::task;
 
 use axum::routing::{delete, post};
-use log::info;
+use log::{info, error};
 use routes::instances::{delete_instance, get_instances, get_specific_instance, post_instance};
 use routes::workloads::{delete_workload, get_specific_workload, get_workloads, post_workload};
 
@@ -32,32 +33,37 @@ pub struct Scheduler {}
 impl SchedulingService for Scheduler {
     type ScheduleStream = ReceiverStream<Result<WorkloadStatus, Status>>;
 
+    async fn stop(&self, request: Request<WorkloadInstance>) -> Result<Response<scheduler::Empty>, Status> {
+        todo!();
+    }
+
+    async fn destroy(&self, request: Request<WorkloadInstance>) -> Result<Response<scheduler::Empty>, Status> {
+        todo!();
+    }
+
     async fn schedule(
         &self,
         request: Request<SchedulingRequest>,
     ) -> Result<Response<Self::ScheduleStream>, Status> {
-        println!("{:?}", request);
+        info!("{:?}", request);
 
         let (sender, receiver) = mpsc::channel(4);
 
         tokio::spawn(async move {
             let fake_statuses_response = vec![
                 WorkloadStatus {
-                    name: "f7e05232-5c3a-4a5e-816e-a77c14342bc0".to_string(),
-                    status_code: 0,
-                    message: "Your workload is WAITING".to_string(),
+                    instance_id: "f7e05232-5c3a-4a5e-816e-a77c14342bc0".to_string(),
+                    status: Some(DeploymentStatus {code: 0, message: Some("The workload is waiting".to_string())}),
                     ..Default::default()
                 },
                 WorkloadStatus {
-                    name: "f7e05232-5c3a-4a5e-816e-a77c14342bc0".to_string(),
-                    status_code: 1,
-                    message: "Your workload is RUNNING".to_string(),
+                    instance_id: "f7e05232-5c3a-4a5e-816e-a77c14342bc0".to_string(),
+                    status: Some(DeploymentStatus {code: 1, message: Some("The workload is running".to_string())}),
                     ..Default::default()
                 },
                 WorkloadStatus {
-                    name: "f7e05232-5c3a-4a5e-816e-a77c14342bc0".to_string(),
-                    status_code: 2,
-                    message: "Your workload is TERMINATED".to_string(),
+                    instance_id: "f7e05232-5c3a-4a5e-816e-a77c14342bc0".to_string(),
+                    status: Some(DeploymentStatus {code: 2, message: Some("The workload is terminated".to_string())}),
                     ..Default::default()
                 },
             ];
@@ -137,10 +143,10 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                 Ok(batch) => {
                     match kv_store {
                         Ok(store) => store.instances_bucket().unwrap().batch(batch.clone()).unwrap(),
-                        Err(e) => println!("{}", e)
+                        Err(e) => error!("{}", e)
                     }
                 }
-                Err(e) => println!("{}", e)
+                Err(e) => error!("{}", e)
             }
         }
     });

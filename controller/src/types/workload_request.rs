@@ -20,7 +20,6 @@ pub enum WorkloadRegistry {
     Podman,
     Ghcr,
 }
-
 #[derive(Debug, Validate, Deserialize, Serialize, Clone)]
 pub struct Workload {
     #[validate(custom = "validate_workload_kind")]
@@ -60,15 +59,11 @@ impl From<Workload> for scheduler::Workload {
     fn from(workload: Workload) -> scheduler::Workload {
         // Create a grpc workload object
         scheduler::Workload {
-            name: workload.name,
+            instance_id: workload.name,
             r#type: Type::Container.into(),
             image: workload.image,
             environment: workload.environment,
-            resource_limits: Some(Resources {
-                cpu: Some(1_i32),
-                memory: Some(1_i32),
-                disk: Some(1_i32),
-            }),
+            resource_limits: Some(Resources::default()),
         }
     }
 }
