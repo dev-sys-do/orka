@@ -25,8 +25,9 @@ impl Handler {
     }
 
     pub fn get_config_value(&self, args: GetConfig) {
+        let config = APP_CONFIG.lock().unwrap();
         let value: &str = match args.resource {
-            ApiFqdn => &APP_CONFIG.orka_url,
+            ApiFqdn => &config.orka_url
         };
         DISPLAY.print_log(value);
     }
@@ -150,6 +151,7 @@ impl Handler {
     }
 
     fn get_url(endpoint: &str) -> String {
-        return APP_CONFIG.orka_url.clone() + endpoint;
+        //return APP_CONFIG.orka_url.clone() + endpoint;
+        format!("{}{}", &APP_CONFIG.lock().unwrap().orka_url, endpoint)
     }
 }

@@ -1,5 +1,6 @@
 use clap::Parser;
 use handler::Handler;
+use std::sync::{Arc, Mutex};
 
 use crate::{
     args::{CommandType, OrkaCtlArgs},
@@ -15,7 +16,7 @@ mod handler;
 
 lazy_static! {
     #[derive(Debug)]
-    pub static ref APP_CONFIG: Config = Config::new_wrapped();
+    pub static ref APP_CONFIG: Arc<Mutex<Config>> = Config::new_wrapped();
     pub static ref DISPLAY: Display = Display {};
 }
 
