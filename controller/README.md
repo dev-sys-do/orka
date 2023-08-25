@@ -32,7 +32,7 @@ $ export PATH="$PATH:$HOME/.local/bin"
 The `orka` controller uses the [pretty_env_logger](https://docs.rs/pretty_env_logger/latest/pretty_env_logger/) crate to log all helpful information. The log level can be set by setting the `RUST_LOG` environment variable. For example, to set the log level to `trace` you can run the following command :
 
 ```
-export RUST_LOG=trace
+export RUST_LOG=info
 ```
 
 
@@ -40,12 +40,8 @@ export RUST_LOG=trace
 
 ### Run the server and client GRPC
 
-1. Run the server GRPC :
+1. Run the server the controller :
 ```
-cargo run --bin server
+cargo run --bin orka-controller
 ```
 
-2. Run the client GRPC :
-```
-cargo run --bin client
-```

@@ -1,6 +1,7 @@
 mod client;
 mod errors;
 mod routes;
+mod store;
 mod types;
 
 use crate::client::scheduler;
