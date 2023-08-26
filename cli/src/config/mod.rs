@@ -29,8 +29,12 @@ impl Config {
             }
         };
 
-        match serde_yaml::from_reader(file) {
-            Ok(conf) => conf,
+        let config: Config = match serde_yaml::from_reader(file) {
+            Ok(conf) => {
+                let mut final_conf: Config = conf;
+                final_conf.orka_url = final_conf.orka_url + ":3000/";
+                return final_conf;
+            },
             Err(e) => {
                 println!("Error parsing configuration file: {}", e);
                 exit(-1)
