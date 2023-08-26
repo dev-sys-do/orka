@@ -1,6 +1,6 @@
 use serde::{Serialize, Deserialize};
 use std::collections::HashMap;
-use crate::workloads::file::{Kind, CustomError};
+use crate::workloads::file::{Kind, CustomError, remove_duplicates_array};
 use regex::Regex;
 use validator::{Validate};
 
@@ -15,7 +15,7 @@ pub struct WorkloadNetworkFile {
 pub struct Network {
     kind: Kind,
     name: String,
-    #[serde(rename = "allowService", default)]
+    #[serde(rename = "allowService", deserialize_with="remove_duplicates_array")]
     allowservice: Vec<String>,
     #[serde(default)]
     pub egress: Vec<HashMap<String, IpAdress>>,

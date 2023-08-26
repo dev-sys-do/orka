@@ -1,5 +1,5 @@
 use serde::{Serialize, Deserialize};
-use crate::workloads::file::{Kind};
+use crate::workloads::file::{Kind, remove_duplicates_array};
 use validator::{Validate, ValidationError};
 
 #[derive(Serialize, Deserialize, Debug)]
@@ -29,9 +29,9 @@ struct Container {
     port: String,
     #[validate(length(min = 1))]
     name: String,
-    #[serde(default)]
+    #[serde(default, deserialize_with="remove_duplicates_array")]
     environment: Vec<String>,
-    #[serde(default)]
+    #[serde(default, deserialize_with="remove_duplicates_array")]
     network: Vec<String>,
     #[serde(default = "Registry::default")]
     registry: Registry,

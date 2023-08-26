@@ -1,4 +1,4 @@
-use serde::{Serialize, Deserialize};
+use serde::{Serialize, Deserialize, Deserializer};
 use std::fs;
 use crate::workloads::container::{WorkloadContainerFile};
 use crate::workloads::network::{WorkloadNetworkFile, verify_network};
@@ -42,6 +42,16 @@ pub enum CustomError {
     OutsidePortRange(u32),
 }
 
+
+pub fn remove_duplicates_array<'de, D>(deserializer: D) -> Result<Vec<String>, D::Error>
+where
+    D: Deserializer<'de>,
+{
+    let mut vec: Vec<String> = Deserialize::deserialize(deserializer)?;
+    vec.sort();
+    vec.dedup();
+    return Ok(vec);
+}
 
 // return result
 pub fn read_file(filepath : PathBuf) -> Result<serde_json::Value, CustomError> {
