@@ -1,7 +1,0 @@
-[package]
-name = "loopback"
-version = "0.1.0"
-edition = "2021"
-
-[dependencies]
-cni-plugin = "0.2"
