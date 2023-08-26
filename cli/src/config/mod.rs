@@ -39,7 +39,7 @@ impl Config {
                 println!("Error parsing configuration file: {}", e);
                 exit(-1)
             }
-        }
+        };
     }
 
     /// Save the current configuration

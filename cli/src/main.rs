@@ -17,12 +17,6 @@ mod workloads;
 
 lazy_static! {
     #[derive(Debug)]
-    pub static ref APP_CONFIG: Config = Config::new();
-    pub static ref DISPLAY: Display = Display {};
-}
-
-lazy_static! {
-    #[derive(Debug)]
     pub static ref APP_CONFIG: Arc<Mutex<Config>> = Config::new_wrapped();
     pub static ref DISPLAY: Display = Display {};
 }
@@ -30,8 +24,7 @@ lazy_static! {
 #[tokio::main]
 async fn main() {
     println!("Hello, cli!");
-    /*
-    let args = OrkaArgs::parse();
+    let args = OrkaCtlArgs::parse();
     println!("{:?}", args);
     execute(args).await
 }
@@ -64,5 +57,5 @@ pub async fn execute(args: OrkaCtlArgs) {
                 handler.delete_instance(instance).await
             }
         },
-    }
+    };
 }
