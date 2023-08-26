@@ -5,6 +5,6 @@ fn main() {
     logger::install(env!("CARGO_PKG_NAME"));
 
     if let Ok(runtime) = Runtime::new() {
-        runtime.block_on(async move { orka_cni::cni_run().await });
+        runtime.block_on(async move { orka_cni::run().await });
     };
 }
