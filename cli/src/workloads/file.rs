@@ -99,7 +99,6 @@ pub fn read_file(filepath : PathBuf) -> Result<serde_json::Value, CustomError> {
             // read verified yaml structure to json
             let containerstring : String = serde_yaml::to_string(&container).unwrap();
             let json : serde_json::Value = serde_yaml::from_str(&containerstring).unwrap();
-
             // return json
             return Ok(json);
         },

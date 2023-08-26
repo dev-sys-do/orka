@@ -1,5 +1,4 @@
 use serde::{Serialize, Deserialize};
-use std::collections::HashMap;
 use crate::workloads::file::{Kind};
 use validator::{Validate, ValidationError};
 
@@ -31,7 +30,7 @@ struct Container {
     #[validate(length(min = 1))]
     name: String,
     #[serde(default)]
-    environment: Vec<HashMap<String, String>>,
+    environment: Vec<String>,
     #[serde(default)]
     network: Vec<String>,
     #[serde(default = "Registry::default")]
@@ -39,5 +38,3 @@ struct Container {
     #[validate(length(min = 1))]
     image: String
 }
-
-

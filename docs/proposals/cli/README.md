@@ -102,13 +102,13 @@ version: 1                     # Default to last supported version
 workload:
     kind: container            # "container", "bare-metal" 
     name: postgres             
-    networks:
+    network:
         - "network_name_1"
         - "mfa_network"
     environment:
-        - key: value
-        - key2: value2
-        - keyX: valueX
+        - key=value
+        - key2=value2
+        - keyX=valueX
 
     registry: ghcr | dockerhub # Default to dockerhub, optional
     image: postgres:15
