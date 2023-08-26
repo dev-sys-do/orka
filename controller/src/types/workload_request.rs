@@ -1,6 +1,8 @@
 use serde::{Deserialize, Serialize};
 use validator::{Validate, ValidationError};
 
+use crate::client::scheduler::{self, workload::{Type, Resources}};
+
 #[derive(Debug, Validate, Deserialize, Serialize, Clone)]
 pub struct WorkloadRequest {
     pub version: String,
@@ -18,6 +20,7 @@ pub enum WorkloadRegistry {
     Podman,
     Ghcr,
 }
+
 #[derive(Debug, Validate, Deserialize, Serialize, Clone)]
 pub struct Workload {
     #[validate(custom = "validate_workload_kind")]
@@ -50,5 +53,22 @@ fn validate_workload_registry(registry: &WorkloadRegistry) -> Result<(), Validat
         WorkloadRegistry::Docker => Ok(()),
         WorkloadRegistry::Podman => Ok(()),
         WorkloadRegistry::Ghcr => Ok(()),
+    }
+}
+
+impl From<Workload> for scheduler::Workload {
+    fn from(workload: Workload) -> scheduler::Workload {
+        // Create a grpc workload object
+        scheduler::Workload {
+            name: workload.name,
+            r#type: Type::Container.into(),
+            image: workload.image,
+            environment: workload.environment,
+            resource_limits: Some(Resources {
+                cpu: Some(1_i32),
+                memory: Some(1_i32),
+                disk: Some(1_i32),
+            }),
+        }
     }
 }

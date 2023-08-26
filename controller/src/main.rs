@@ -3,9 +3,11 @@ mod errors;
 mod routes;
 mod store;
 mod types;
+mod dbstore;
 
 use crate::client::scheduler;
 
+use dbstore::{DB_BATCH, STORE};
 use tokio::sync::mpsc;
 use tokio_stream::wrappers::ReceiverStream;
 use tonic::{transport::Server, Request, Response, Status};
@@ -13,12 +15,11 @@ use tonic::{transport::Server, Request, Response, Status};
 use axum::Router;
 use scheduler::scheduling_service_server::{SchedulingService, SchedulingServiceServer};
 use scheduler::{SchedulingRequest, WorkloadStatus};
-use std::collections::HashMap;
 use std::net::SocketAddr;
-use std::sync::{Arc, Mutex};
+use std::sync::Arc;
 use std::thread;
+use std::time::Duration;
 use tokio::task;
-use once_cell::sync::Lazy;
 
 use axum::routing::{delete, post};
 use log::info;
@@ -36,7 +37,7 @@ impl SchedulingService for Scheduler {
         &self,
         request: Request<SchedulingRequest>,
     ) -> Result<Response<Self::ScheduleStream>, Status> {
-        info!("Got a request: {:?}", request);
+        println!("Got a request: {:?}", request);
 
         let (sender, receiver) = mpsc::channel(4);
 
@@ -83,8 +84,6 @@ impl SchedulingService for Scheduler {
     }
 }
 
-pub static DB_MAP: Lazy<Arc<Mutex<HashMap<String, WorkloadStatus>>>> = Lazy::new(|| {Arc::new(Mutex::new(HashMap::new()))});
-
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
     // Initialize logger
@@ -127,21 +126,18 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             .unwrap();
     });
 
-    let db_batch = Arc::clone(&DB_MAP);
+    let db_batch = Arc::clone(&DB_BATCH);
+    let db_store = Arc::clone(&STORE);
+
     let db_thread = task::spawn(async move {
         loop {
             thread::sleep(Duration::from_secs(5));
-            let mut map = db_batch.lock().unwrap();
+            let batch = db_batch.lock().unwrap();
 
-            if map.len() > 0 {
-                for (key, val) in map.iter() {
-                    println!("Key: {}, value: {:?}", key, val);
-                    // TODO: Insert or update data about instance statuses in KV.
-                }
-                map.clear();
-            }
+            db_store.lock().unwrap().instances_bucket.batch(batch.clone()).unwrap();
         }
     });
+
     // Wait for both servers and a db thread to finish
     tokio::try_join!(grpc_thread, http_thread, db_thread)?;
 

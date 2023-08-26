@@ -1,7 +1,7 @@
 use scheduler::scheduling_service_client::SchedulingServiceClient;
 use scheduler::SchedulingRequest;
-use tonic::transport::Channel;
 use tonic::Streaming;
+use tonic::transport::Channel;
 
 use self::scheduler::WorkloadStatus;
 
@@ -21,7 +21,7 @@ impl Client {
 
     pub async fn schedule_workload(
         &mut self,
-        scheduling_request: SchedulingRequest,
+        scheduling_request: SchedulingRequest
     ) -> Result<Streaming<WorkloadStatus>, tonic::Status> {
         let request = scheduling_request;
 
