@@ -7,9 +7,10 @@ use std::io::ErrorKind::NotFound;
 use std::path::PathBuf;
 
 #[derive(Serialize, Deserialize, PartialEq, Debug)]
-#[serde(rename_all = "snake_case")]
 pub enum Kind {
+    #[serde(rename(deserialize = "container", serialize = "Container"))]
     Container,
+    #[serde(rename(deserialize = "network", serialize = "Network"))]
     Network,
 }
 

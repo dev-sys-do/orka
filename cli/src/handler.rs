@@ -40,7 +40,7 @@ impl Handler {
             Ok(json) => {
                 let res = self
                     .client
-                    .post(Handler::get_url("workload"))
+                    .post(Handler::get_url("workloads"))
                     .json(&json)
                     .send()
                     .await;
