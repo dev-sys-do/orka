@@ -18,32 +18,30 @@ pub struct Veth {
 #[async_trait]
 impl Link for Veth {
     async fn link_add(&self, handle: &Handle) -> Result<(), CniError> {
-        if let Err(err) = handle
+        handle
             .link()
             .add()
             .veth(self.linkattrs.name.clone(), self.peer_name.clone())
             .execute()
             .await
-        {
-            return Err(CniError::Generic(format!(
-                "[ORKANET]: Failed to make veth pair: {} and {}. (fn link_add)\n{}\n",
-                self.linkattrs.name, self.peer_name, err
-            )));
-        }
+            .map_err(|err| {
+                CniError::Generic(format!(
+                    "[ORKANET]: Failed to make veth pair: {} and {}. (fn link_add)\n{}\n",
+                    self.linkattrs.name, self.peer_name, err
+                ))
+            })?;
 
-        let fd = match open(
+        let fd = open(
             self.peer_namespace.as_path(),
             OFlag::O_RDONLY,
             Mode::empty(),
-        ) {
-            Ok(raw_fd) => raw_fd,
-            Err(err) => {
-                return Err(CniError::Generic(format!(
+        )
+        .map_err(|err| {
+            CniError::Generic(format!(
                 "[ORKANET]: Failed to convert peer namespace to RawFd: {:?}. (fn link_add)\n{}\n",
                 self.peer_namespace, err
-            )))
-            }
-        };
+            ))
+        })?;
 
         let mut links = handle
             .link()
@@ -105,7 +103,7 @@ impl Veth {
         cont_veth_mac: Option<&str>,
         host_ns: PathBuf,
     ) -> Result<(String, Self), CniError> {
-        let (host_veth_name, cont_veth) = match Self::make_veth(
+        let (host_veth_name, cont_veth) = Self::make_veth(
             handle_cont,
             cont_veth_name,
             host_veth_name,
@@ -113,15 +111,9 @@ impl Veth {
             cont_veth_mac,
             host_ns.clone(),
         )
-        .await
-        {
-            Ok(res) => res,
-            Err(err) => return Err(err),
-        };
+        .await?;
 
-        if let Err(err) = Veth::link_set_up(&handle_host, host_veth_name.clone()).await {
-            return Err(err);
-        }
+        Veth::link_set_up(handle_host, host_veth_name.clone()).await?;
 
         Ok((host_veth_name, cont_veth))
     }
@@ -140,12 +132,8 @@ impl Veth {
             veth_peer_name
         };
         let veth: Veth =
-            match Self::make_veth_pair(handle, name.clone(), peer_name.clone(), mtu, mac, host_ns)
-                .await
-            {
-                Ok(veth) => veth,
-                Err(err) => return Err(err),
-            };
+            Self::make_veth_pair(handle, name.clone(), peer_name.clone(), mtu, mac, host_ns)
+                .await?;
 
         Ok((peer_name, veth))
     }
@@ -172,9 +160,7 @@ impl Veth {
             let _ = veth.linkattrs.hardware_addr.insert(addr.to_owned());
         }
 
-        if let Err(err) = veth.link_add(&handle).await {
-            return Err(err);
-        }
+        veth.link_add(handle).await?;
 
         // ? Re-fetch the container link to get its creation-time parameters, e.g. index and mac ?
 

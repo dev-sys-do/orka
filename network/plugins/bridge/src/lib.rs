@@ -30,9 +30,9 @@ pub async fn cmd_add(
         .and_then(|value| value.as_bool())
         .unwrap_or(false);
     if hairpin_mode && promisc_mode {
-        return Err(CniError::Generic(format!(
-            "[ORKANET ERROR]: Cannot set hairpin mode and promiscuous mode at the same time. (fn cmd_add)\n"
-        )));
+        return Err(CniError::Generic(
+            "[ORKANET ERROR]: Cannot set hairpin mode and promiscuous mode at the same time. (fn cmd_add)\n".to_string()
+        ));
     }
 
     let mtu: i64 = config

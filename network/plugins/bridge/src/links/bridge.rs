@@ -91,22 +91,17 @@ impl Bridge {
             vlan_filtering,
         };
 
-        if let Err(err) = br.link_add(&handle).await {
-            return Err(err);
-        }
+        br.link_add(handle).await?;
+
         if br.promisc_mode {
-            if let Err(err) = Bridge::link_promisc_on(&handle, br.linkattrs.name.clone()).await {
-                return Err(err);
-            }
+            Bridge::link_promisc_on(handle, br.linkattrs.name.clone()).await?;
         }
 
         // Re-fetch link to read all attributes and if it already existed,
         // ensure it's really a bridge with similar configuration
         // Self::bridge_by_name(handle, br.linkattrs.name.clone()).await;
 
-        if let Err(err) = Bridge::link_set_up(&handle, br.linkattrs.name.clone()).await {
-            return Err(err);
-        }
+        Bridge::link_set_up(handle, br.linkattrs.name.clone()).await?;
 
         Ok(br)
     }
@@ -140,14 +135,10 @@ impl Bridge {
         tokio::spawn(connection_host);
 
         // WARNING ! [Change namespace from host to container]
-        if let Err(err) =
-            NetworkNamespace::unshare_processing(String::from(netns.to_string_lossy()))
-        {
-            return Err(CniError::Generic(format!(
+        NetworkNamespace::unshare_processing(String::from(netns.to_string_lossy())).map_err(|err| CniError::Generic(format!(
                 "[ORKANET ERROR]: Could not unshare processing to netns {:?}. (fn setup_veth)\n{}\n",
                 netns, err
-            )));
-        }
+            )))?;
 
         // Handle for container
         let (connection_cont, handle_cont, _) = rtnetlink::new_connection().unwrap();
@@ -156,21 +147,14 @@ impl Bridge {
         // create the veth pair in the container and move host end into host netns
         let host_ns: PathBuf = PathBuf::from("/proc/1/ns/net");
         let (host_veth_name, cont_veth) =
-            match Veth::setup_veth(&handle_host, &handle_cont, ifname, mtu, mac, host_ns).await {
-                Ok(res) => res,
-                Err(err) => return Err(err),
-            };
-
+            Veth::setup_veth(&handle_host, &handle_cont, ifname, mtu, mac, host_ns).await?;
         // connect host veth end to the bridge
-        if let Err(err) = Self::link_set_master(
+        Self::link_set_master(
             &handle_host,
             host_veth_name.clone(),
             self.linkattrs.name.clone(),
         )
-        .await
-        {
-            return Err(err);
-        }
+        .await?;
 
         // ? set hairpin mode ?
         // ? remove default vlan ?
