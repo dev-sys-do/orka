@@ -14,6 +14,12 @@ pub enum ApiError {
 
     #[error("Serialization error")]
     SerializationError(#[from] serde_json::Error),
+
+    #[error("Database error")]
+    DatabaseError(#[from] kv::Error),
+
+    #[error("Scheduling error")]
+    SchedulingError(#[from] tonic::Status),
 }
 
 impl IntoResponse for ApiError {
@@ -24,6 +30,8 @@ impl IntoResponse for ApiError {
             }
             ApiError::ClientConnectError(e) => (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()),
             ApiError::SerializationError(e) => (StatusCode::BAD_REQUEST, e.to_string()),
+            ApiError::DatabaseError(e) => (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()),
+            ApiError::SchedulingError(e) => (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()),
         };
 
         let payload = json!({
