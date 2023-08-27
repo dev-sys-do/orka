@@ -1,5 +1,10 @@
-use crate::types::workload_request::WorkloadRequest;
+use std::sync::{Arc, Mutex};
+
+use crate::types::{workload_request::WorkloadRequest, instance_status::InstanceStatus};
 use kv::*;
+use once_cell::sync::Lazy;
+
+pub static DB_BATCH: Lazy<Arc<Mutex<Batch<String, Json<InstanceStatus>>>>> = Lazy::new(|| {Arc::new(Mutex::new(Batch::new()))});
 
 pub struct KeyValueStore {
     store: Store,
@@ -12,21 +17,34 @@ impl KeyValueStore {
 
         // Open the key/value store
         let store = Store::new(cfg)?;
-
-        Ok(KeyValueStore { store })
+        
+        Ok(Self { store })
     }
 
-    pub fn post_workload_value(&self, key: &str, workload: WorkloadRequest) -> Result<(), Error> {
-        let bucket = self.store.bucket::<&str, Json<WorkloadRequest>>(None)?;
-        let key = key;
-        let value = Json(workload);
-        bucket.set(&key, &value)?;
-        Ok(())
+    pub fn workloads_bucket(&self) -> Result<Bucket<'_, String, Json<WorkloadRequest>>, Error> {
+        Ok(self.store.bucket::<String, Json<WorkloadRequest>>(Some("workloads"))?)
     }
 
-    // pub fn get_value(&self, key: &str) -> Result<Json<WorkloadRequest>, Error> {
-    //     let bucket = self.store.bucket::<&str, Json<WorkloadRequest>>(None)?;
-    //     let value = bucket.get(&key)?.unwrap();
-    //     Ok(value)
-    // }
+    pub fn instances_bucket(&self) -> Result<Bucket<'_, String, Json<InstanceStatus>>, Error> {
+        Ok(self.store.bucket::<String, Json<InstanceStatus>>(Some("instances"))?)
+    }
+
+    // Get an array of workload ids
+    pub fn select_workloads(&self) -> Result<Vec<String>, Error> {
+        let mut workloads: Vec<String> = Vec::new();
+        for workload in self.workloads_bucket()?.iter() {
+            workloads.push(workload?.key()?);
+        }
+        Ok(workloads)
+    }
+
+    // Get an array of instance names
+    pub fn select_instances(&self) -> Result<Vec<String>, Error> {
+        let mut instances: Vec<String> = Vec::new();
+        for instance in self.instances_bucket()?.iter() {
+            instances.push(instance?.key()?);
+        }
+        Ok(instances)
+    }
+
 }

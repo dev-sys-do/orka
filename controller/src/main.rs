@@ -3,11 +3,10 @@ mod errors;
 mod routes;
 mod store;
 mod types;
-mod dbstore;
 
 use crate::client::scheduler;
 
-use dbstore::{DB_BATCH, STORE};
+use store::kv_manager::{KeyValueStore, DB_BATCH};
 use tokio::sync::mpsc;
 use tokio_stream::wrappers::ReceiverStream;
 use tonic::{transport::Server, Request, Response, Status};
@@ -37,26 +36,26 @@ impl SchedulingService for Scheduler {
         &self,
         request: Request<SchedulingRequest>,
     ) -> Result<Response<Self::ScheduleStream>, Status> {
-        println!("Got a request: {:?}", request);
+        println!("{:?}", request);
 
         let (sender, receiver) = mpsc::channel(4);
 
         tokio::spawn(async move {
             let fake_statuses_response = vec![
                 WorkloadStatus {
-                    name: "Workload 1".to_string(),
+                    name: "f7e05232-5c3a-4a5e-816e-a77c14342bc0".to_string(),
                     status_code: 0,
                     message: "Your workload is WAITING".to_string(),
                     ..Default::default()
                 },
                 WorkloadStatus {
-                    name: "Workload 1".to_string(),
+                    name: "f7e05232-5c3a-4a5e-816e-a77c14342bc0".to_string(),
                     status_code: 1,
                     message: "Your workload is RUNNING".to_string(),
                     ..Default::default()
                 },
                 WorkloadStatus {
-                    name: "Workload 2".to_string(),
+                    name: "f7e05232-5c3a-4a5e-816e-a77c14342bc0".to_string(),
                     status_code: 2,
                     message: "Your workload is TERMINATED".to_string(),
                     ..Default::default()
@@ -127,14 +126,22 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     });
 
     let db_batch = Arc::clone(&DB_BATCH);
-    let db_store = Arc::clone(&STORE);
 
+    // Create a thread to sync the batch with the database
     let db_thread = task::spawn(async move {
         loop {
             thread::sleep(Duration::from_secs(5));
-            let batch = db_batch.lock().unwrap();
-
-            db_store.lock().unwrap().instances_bucket.batch(batch.clone()).unwrap();
+            let kv_batch = db_batch.lock();
+            let kv_store = KeyValueStore::new();
+            match kv_batch {
+                Ok(batch) => {
+                    match kv_store {
+                        Ok(store) => store.instances_bucket().unwrap().batch(batch.clone()).unwrap(),
+                        Err(e) => println!("{}", e)
+                    }
+                }
+                Err(e) => println!("{}", e)
+            }
         }
     });
 
