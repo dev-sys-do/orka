@@ -7,6 +7,7 @@ publish = false
 
 [dependencies]
 anyhow = { version = "1.0.72", features = ["backtrace"] }
+chrono = "0.4.26"
 clap = { version = "4.3.21", features = ["derive", "env"] }
 clap-verbosity-flag = "2.0.1"
 log = "0.4.19"
@@ -14,6 +15,7 @@ orka-proto = { path = "../proto" }
 prost = "0.11.9"
 prost-types = "0.11.9"
 rcgen = "0.11.1"
+thiserror = "1.0.47"
 time = "0.3.25"
 tokio = { version = "1.30.0", features = ["macros", "rt-multi-thread"] }
 tokio-stream = "0.1.14"
