@@ -1,7 +1,9 @@
 //! The gRPC server for interacting with the Orka scheduler.
 
 use std::net::SocketAddr;
+use std::sync::{Arc, Mutex};
 
+use crate::managers::node_agent::manager::NodeAgentManager;
 use anyhow::{Context, Result};
 use orka_proto::{
     scheduler_agent::{
@@ -85,10 +87,17 @@ impl GrpcServer {
                 .with_context(|| "Unable to configure TLS with the gRPC server")?;
         }
 
+        // Create the shared node agent manager
+        let node_agent_manager = Arc::new(Mutex::new(NodeAgentManager::new()));
+
         // Configure the router
         let router = server_builder
-            .add_service(LifecycleServiceServer::new(AgentLifecycleSvc::new()))
-            .add_service(StatusUpdateServiceServer::new(AgentStatusUpdateSvc::new()))
+            .add_service(LifecycleServiceServer::new(AgentLifecycleSvc::new(
+                Arc::clone(&node_agent_manager),
+            )))
+            .add_service(StatusUpdateServiceServer::new(AgentStatusUpdateSvc::new(
+                Arc::clone(&node_agent_manager),
+            )))
             .add_service(SchedulingServiceServer::new(ControllerSchedulingSvc::new()));
 
         event!(Level::DEBUG, "The gRPC server was configured successfully");
