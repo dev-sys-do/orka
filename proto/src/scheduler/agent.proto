@@ -13,18 +13,13 @@ message ConnectionRequest {
     string id = 1;
 }
 
-message ConnectionResponse {
-    enum StatusCode {
-        GRANTED = 0;
-        DENIED = 1;
-    }
-
-    StatusCode status_code = 1;
+message DisconnectionNotice {
+    string id = 1;
 }
 
 service LifecycleService {
-    rpc JoinCluster(ConnectionRequest) returns (ConnectionResponse);
-    rpc LeaveCluster(Empty) returns (Empty);
+    rpc JoinCluster(ConnectionRequest) returns (Empty);
+    rpc LeaveCluster(DisconnectionNotice) returns (Empty);
 }
 
 
@@ -42,8 +37,9 @@ message NodeStatus {
         double load = 1;
     }
 
-    Memory memory = 1;
-    CpuLoad cpu_load = 2;
+    string id = 1;
+    Memory memory = 2;
+    CpuLoad cpu_load = 3;
 }
 
 service StatusUpdateService {
