@@ -1,6 +1,9 @@
 services:
   brdige:
-    build: .
+    container_name: brdige
+    build:
+      context: ..
+      dockerfile: ./test/Dockerfile
     environment:
       NETCONFPATH: /opt/cni/netconfs
       CNI_PATH: /opt/cni/bin/

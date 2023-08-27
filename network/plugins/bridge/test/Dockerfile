@@ -9,7 +9,7 @@ RUN apt-get update && apt-get upgrade -y && apt-get install -y iproute2
 RUN mkdir -p /opt/cni/bin
 RUN mkdir -p /opt/cni/netconfs
 COPY --from=builder /usr/local/cargo/bin/bridge /opt/cni/bin
-COPY bridge.test.conf /opt/cni/netconfs
-COPY run.sh /opt/run.sh
+COPY ./test/bridge.conf /opt/cni/netconfs
+COPY ./test/run.sh /opt/run.sh
 RUN chmod +x /opt/run.sh
 CMD [ "/opt/run.sh" ]
