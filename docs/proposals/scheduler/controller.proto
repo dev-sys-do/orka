@@ -18,7 +18,7 @@ message Workload {
         optional int32 disk = 3;
     }
 
-    string name = 1;
+    string instance_id = 1;
     Type type = 2;
     string image = 3;
     repeated string environment = 4;
@@ -29,28 +29,16 @@ message SchedulingRequest {
     Workload workload = 1;
 }
 
-message SchedulingResponse {
-    enum StatusCode {
-        SCHEDULED = 0;
-        SCHEDULING = 1;
-        REJECTED = 2;
-    }
-
-    enum RejectionReason {
-        BAD_REQUEST = 0;
-        NO_CONTACTABLE_AGENT = 1;
-        AGENTS_REFUSED_OPERATION = 2;
-    }
-
-    StatusCode status_code = 1;
-    optional RejectionReason rejection_reason = 2;
-}
-
 message WorkloadStatus {
-    enum StatusCode {
-        WAITING = 0;
-        RUNNING = 1;
-        TERMINATED = 2;
+    message Status {
+        enum StatusCode {
+            WAITING = 0;
+            RUNNING = 1;
+            TERMINATED = 2;
+        }
+
+        uint32 code = 1;
+        optional string message = 2;
     }
 
     message Resources {
@@ -59,12 +47,19 @@ message WorkloadStatus {
         int32 disk = 3;
     }
 
-    string name = 1;
-    StatusCode status_code = 2;
+    string instance_id = 1;
+    Status status = 2;
     Resources resource_usage = 3;
-    string message = 4;
+}
+
+message Empty {}
+
+message WorkloadInstance {
+    string instance_id = 1;
 }
 
 service SchedulingService {
     rpc Schedule(SchedulingRequest) returns (stream WorkloadStatus);
+    rpc Stop (WorkloadInstance) returns (Empty);
+    rpc Destroy (WorkloadInstance) returns (Empty);
 }
