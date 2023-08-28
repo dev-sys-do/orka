@@ -1,11 +1,16 @@
-use crate::delegation::delegate;
+use crate::{
+    delegation::delegate,
+    links::{link::Link, veth::Veth},
+    route,
+};
 use cni_plugin::{
     config::NetworkConfig,
     error::CniError,
     reply::{ErrorReply, IpamSuccessReply},
     Command,
 };
-use std::collections::HashMap;
+use std::net::Ipv4Addr;
+use std::{collections::HashMap, net::IpAddr};
 
 pub async fn exec_cmd<'a>(
     cmd: Command,
@@ -47,4 +52,35 @@ pub fn create_delegation_config(parent_config: NetworkConfig) -> Result<NetworkC
     })
 }
 
-pub async fn configure_iface(_ifname: String, _res: IpamSuccessReply) {}
+pub async fn configure_iface(ifname: String, res: IpamSuccessReply) -> Result<(), CniError> {
+    let (connection, handle, _) = rtnetlink::new_connection().unwrap();
+    tokio::spawn(connection);
+
+    if let Some(ipc) = res.ips.get(0) {
+        Veth::link_addr_add(
+            &handle,
+            ifname.clone(),
+            ipc.address.ip(),
+            ipc.address.prefix(),
+        )
+        .await
+        .map_err(|err| CniError::from(err))?;
+    }
+
+    Veth::link_set_up(&handle, ifname.clone()).await?;
+
+    if let Some(ipc) = res.ips.get(0) {
+        if let Some(IpAddr::V4(gw_addr)) = ipc.gateway {
+            route::route_add_default(&handle, gw_addr)
+                .await
+                .map_err(|err| CniError::from(err))?;
+        } else {
+            return Err(CniError::Generic(format!(
+                "Failed to convert IpAddr to Ipv4Addr for adding default route to ifname: {}",
+                ifname
+            )));
+        }
+    }
+
+    Ok(())
+}

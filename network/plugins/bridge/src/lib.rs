@@ -1,6 +1,7 @@
 pub mod delegation;
 pub mod ipam;
 pub mod links;
+pub mod route;
 pub mod types;
 
 use crate::types::NetworkConfigReference::*;
@@ -81,7 +82,7 @@ pub async fn cmd_add(
     }
 
     // Configure the container IP address(es)
-    ipam::configure_iface(container_interface.name.clone(), ipam_result.clone()).await;
+    let _ = ipam::configure_iface(container_interface.name.clone(), ipam_result.clone()).await;
 
     let is_gw: bool = config
         .specific

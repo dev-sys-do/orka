@@ -1,6 +1,6 @@
 services:
   brdige:
-    container_name: brdige
+    container_name: bridge
     build:
       context: ..
       dockerfile: ./test/Dockerfile
