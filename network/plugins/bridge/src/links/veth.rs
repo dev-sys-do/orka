@@ -2,6 +2,7 @@ use super::link::{Link, LinkAttrs};
 use super::utils;
 use async_trait::async_trait;
 use cni_plugin::error::CniError;
+use cni_plugin::macaddr::MacAddr;
 use futures::stream::TryStreamExt;
 use nix::fcntl::{open, OFlag};
 use nix::sys::stat::Mode;
@@ -79,7 +80,7 @@ impl Veth {
         handle_cont: &Handle,
         cont_veth_name: String,
         mtu: i64,
-        cont_veth_mac: Option<&str>,
+        cont_veth_mac: Option<MacAddr>,
         host_ns: PathBuf,
     ) -> Result<(String, Self), CniError> {
         Self::setup_veth_with_name(
@@ -100,7 +101,7 @@ impl Veth {
         cont_veth_name: String,
         host_veth_name: String,
         mtu: i64,
-        cont_veth_mac: Option<&str>,
+        cont_veth_mac: Option<MacAddr>,
         host_ns: PathBuf,
     ) -> Result<(String, Self), CniError> {
         let (host_veth_name, cont_veth) = Self::make_veth(
@@ -123,7 +124,7 @@ impl Veth {
         name: String,
         veth_peer_name: String,
         mtu: i64,
-        mac: Option<&str>,
+        mac: Option<MacAddr>,
         host_ns: PathBuf,
     ) -> Result<(String, Self), CniError> {
         let peer_name: String = if veth_peer_name.is_empty() {
@@ -143,7 +144,7 @@ impl Veth {
         name: String,
         peer: String,
         mtu: i64,
-        mac: Option<&str>,
+        mac: Option<MacAddr>,
         host_ns: PathBuf,
     ) -> Result<Self, CniError> {
         let mut veth: Self = Veth {
@@ -156,8 +157,10 @@ impl Veth {
             peer_name: peer,
             peer_namespace: host_ns,
         };
+
+        // MAC addr is set but not set...
         if let Some(addr) = mac {
-            let _ = veth.linkattrs.hardware_addr.insert(addr.to_owned());
+            veth.linkattrs.hardware_addr = Some(addr);
         }
 
         veth.link_add(handle).await?;

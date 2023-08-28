@@ -2,8 +2,9 @@ use super::{
     link::{Link, LinkAttrs},
     veth::Veth,
 };
+use crate::types::NetworkConfigReference::*;
 use async_trait::async_trait;
-use cni_plugin::{config::NetworkConfig, error::CniError};
+use cni_plugin::{config::NetworkConfig, error::CniError, macaddr::MacAddr, reply::Interface};
 use futures::stream::TryStreamExt;
 use rtnetlink::{Handle, NetworkNamespace};
 use std::path::PathBuf;
@@ -42,35 +43,44 @@ impl Link for Bridge {
 }
 
 impl Bridge {
-    pub async fn setup_bridge(config: NetworkConfig) -> Result<Self, CniError> {
+    pub async fn setup_bridge(config: NetworkConfig) -> Result<(Self, Interface), CniError> {
         let (connection, handle, _) = rtnetlink::new_connection().unwrap();
         tokio::spawn(connection);
 
         let vlan_filtering: bool = config
             .specific
-            .get("vlan")
+            .get(&Vlan.to_string())
             .and_then(|value| value.as_i64())
             .map(|i| i == 0 || config.specific.contains_key("vlanTrunk"))
             .unwrap_or(false);
         let promisc_mode: bool = config
             .specific
-            .get("promiscMode")
+            .get(&PromiscMode.to_string())
             .and_then(|value| value.as_bool())
             .unwrap_or(false);
         let br_name: String = config
             .specific
-            .get("bridge")
+            .get(&Bridge.to_string())
             .and_then(|value| value.as_str())
-            .unwrap_or("cni0")
+            .unwrap()
             .to_string();
         let mtu: i64 = config
             .specific
-            .get("mtu")
+            .get(&Mtu.to_string())
             .and_then(|value| value.as_i64())
-            .unwrap_or(1500);
+            .unwrap();
 
-        // create bridge if necessary
-        Bridge::ensure_bridge(&handle, br_name, mtu, promisc_mode, vlan_filtering).await
+        let br: Bridge =
+            Bridge::ensure_bridge(&handle, br_name, mtu, promisc_mode, vlan_filtering).await?;
+
+        Ok((
+            br.clone(),
+            Interface {
+                name: br.linkattrs.name,
+                mac: br.linkattrs.hardware_addr,
+                sandbox: String::new().into(),
+            },
+        ))
     }
 
     async fn ensure_bridge(
@@ -123,14 +133,18 @@ impl Bridge {
         &self,
         netns: PathBuf,
         ifname: String,
-        mtu: i64,
-        _hairpin_mode: bool,
-        _vlan_id: Option<i64>,
-        _vlans: Option<Vec<i64>>,
-        _preserve_default_vlan: bool,
-        mac: Option<&str>,
-    ) -> Result<(String, String), CniError> {
-        // Handle for host
+        config: NetworkConfig,
+    ) -> Result<(Interface, Interface), CniError> {
+        let mtu: i64 = config
+            .specific
+            .get(&Mtu.to_string())
+            .and_then(|value| value.as_i64())
+            .unwrap();
+
+        //  config.args.get("MAC");
+        let mac: Option<MacAddr> = Option::None;
+
+        // Handle for host namespace
         let (connection_host, handle_host, _) = rtnetlink::new_connection().unwrap();
         tokio::spawn(connection_host);
 
@@ -140,14 +154,22 @@ impl Bridge {
                 netns, err
             )))?;
 
-        // Handle for container
+        // Handle for container namespace
         let (connection_cont, handle_cont, _) = rtnetlink::new_connection().unwrap();
         tokio::spawn(connection_cont);
 
-        // create the veth pair in the container and move host end into host netns
+        // create the veth pair in the container
         let host_ns: PathBuf = PathBuf::from("/proc/1/ns/net");
-        let (host_veth_name, cont_veth) =
-            Veth::setup_veth(&handle_host, &handle_cont, ifname, mtu, mac, host_ns).await?;
+        let (host_veth_name, cont_veth) = Veth::setup_veth(
+            &handle_host,
+            &handle_cont,
+            ifname,
+            mtu,
+            mac,
+            host_ns.clone(),
+        )
+        .await?;
+
         // connect host veth end to the bridge
         Self::link_set_master(
             &handle_host,
@@ -160,24 +182,17 @@ impl Bridge {
         // ? remove default vlan ?
         // ? Currently bridge CNI only support access port(untagged only) or trunk port(tagged only) ?
 
-        Ok((host_veth_name, cont_veth.linkattrs.name))
-    }
+        let cont_iface = Interface {
+            name: cont_veth.linkattrs.name,
+            mac: Option::None,
+            sandbox: netns,
+        };
+        let host_iface = Interface {
+            name: host_veth_name,
+            mac: Option::None,
+            sandbox: host_ns,
+        };
 
-    // Attach ipv4 to interface
-    // async fn attach_ip(handle: &Handle, ifname: &str, ipaddr: IpAddr, mask: u8) {
-    //     let mut links = handle.link().get().match_name(ifname.to_owned()).execute();
-    //     match links.try_next().await {
-    //         Ok(Some(link)) => {
-    //             handle
-    //                 .address()
-    //                 .add(link.header.index, ipaddr, mask)
-    //                 .execute()
-    //                 .await
-    //                 // .map_err(|e| println!("[ORKANET]: ERROR {}", e))
-    //                 .unwrap();
-    //         }
-    //         Ok(None) => !panic!("[ORKANET]: Error on on attach ip {}.", ifname),
-    //         Err(_) => !panic!("[ORKANET]: Error on on attach ip {}.", ifname),
-    //     }
-    // }
+        Ok((host_iface, cont_iface))
+    }
 }

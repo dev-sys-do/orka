@@ -1,7 +1,8 @@
 use async_trait::async_trait;
-use cni_plugin::error::CniError;
+use cni_plugin::{error::CniError, macaddr::MacAddr};
 use futures::stream::TryStreamExt;
 use rtnetlink::Handle;
+use std::net::IpAddr;
 
 #[derive(Clone)]
 pub struct LinkAttrs {
@@ -13,12 +14,40 @@ pub struct LinkAttrs {
     // default packet limit
     // #[derivative(Default(value = "-1"))]
     pub txqlen: i8,
-    pub hardware_addr: Option<String>,
+    pub hardware_addr: Option<MacAddr>,
 }
 
 #[async_trait]
 pub trait Link {
     async fn link_add(&self, handle: &Handle) -> Result<(), CniError>;
+
+    async fn link_addr_add(
+        handle: &Handle,
+        name: String,
+        addr: IpAddr,
+        prefix_len: u8,
+    ) -> Result<(), CniError> {
+        let mut links = handle.link().get().match_name(name.clone()).execute();
+        match links.try_next().await {
+            Ok(Some(link)) => handle
+                .address()
+                .add(link.header.index, addr, prefix_len)
+                .execute()
+                .await
+                .map_err(|err| {
+                    CniError::Generic(format!(
+                        "[ORKANET ERROR]: Failed to add address {} to {}. (fn link_addr_add)\n{}\n",
+                        addr, name, err
+                    ))
+                }),
+            _ => {
+                return Err(CniError::Generic(format!(
+                    "[ORKANET ERROR]: Failed to add address {} to {}. (fn link_addr_add)\n",
+                    addr, name
+                )))
+            }
+        }
+    }
 
     async fn link_set_master(
         handle: &Handle,
