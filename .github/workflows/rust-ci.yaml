@@ -1,0 +1,36 @@
+name: Rust CI
+
+on:
+  workflow_call:
+    inputs:
+      directory:
+        description: 'Directory to change to'
+        type: string
+        required: true
+
+jobs:
+  checks:
+    name: Cargo rustfmt
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ${{ inputs.directory }}
+    steps:
+      - uses: actions/checkout@v3
+        name: Checkout project
+
+      - uses: dtolnay/rust-toolchain@stable
+        name: Install the Rust toolchain
+  
+      - uses: Swatinem/rust-cache@v2
+        name: Use cached dependencies and artifacts
+  
+      - uses: arduino/setup-protoc@v2
+        name: Install Protoc
+
+      - name: Check formatting
+        run: cargo fmt --check
+
+      - name: Run lint
+        run: cargo clippy -- -D warnings
+
