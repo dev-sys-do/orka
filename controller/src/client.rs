@@ -2,14 +2,11 @@ use scheduler::scheduling_service_client::SchedulingServiceClient;
 use scheduler::SchedulingRequest;
 use tonic::Streaming;
 use tonic::transport::Channel;
-use tonic::Streaming;
-
-use self::scheduler::WorkloadStatus;
 
 use self::scheduler::WorkloadStatus;
 
 pub mod scheduler {
-    tonic::include_proto!("orkascheduler");
+    tonic::include_proto!("scheduler.controller");
 }
 
 pub struct Client {
