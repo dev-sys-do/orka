@@ -2,51 +2,56 @@ syntax = "proto3";
 
 package node_agent;
 
-enum Signal {
-    STOP = 0;
-    KILL = 1;
-}
-
-enum Status {
-    WAITING = 0;
-    RUNNING = 1;
-    TERMINATED = 2;
-}
-
-enum Type {
-    CONTAINER = 0;
-}
-
-message Resource {
-    ResourceDetails limit = 1;
-    ResourceDetails usage = 2;
-}
-
-message ResourceDetails {
-    int32 cpu = 1;
-    int32 memory = 2;
-    int32 disk = 3;
-}
-
 message Workload {
-    string name = 1;
+    enum Type {
+        CONTAINER = 0;
+    }
+
+    message Resources {
+        optional int32 cpu = 1;
+        optional int32 memory = 2;
+        optional int32 disk = 3;
+    }
+
+    string instance_id = 1;
     Type type = 2;
     string image = 3;
     repeated string environment = 4;
-    Resource resource = 5;
+    optional Resources resource_limits = 5;
 }
 
 message WorkloadStatus {
-    string name = 1;
+    message Status {
+        enum StatusCode {
+            WAITING = 0;
+            RUNNING = 1;
+            TERMINATED = 2;
+        }
+
+        uint32 code = 1;
+        optional string message = 2;
+    }
+
+    message Resources {
+        int32 cpu = 1;
+        int32 memory = 2;
+        int32 disk = 3;
+    }
+
+    string instance_id = 1;
     Status status = 2;
-    Resource resource = 3;
-    string message = 4;
+    Resources resource_usage = 3;
 }
 
 message Empty {}
 
 message WorkloadSignal {
-    Workload workload = 1;
+    enum Signal {
+        STOP = 0;
+        KILL = 1;
+    }
+
+    string instance_id = 1;
     Signal signal = 2;
 }
 
