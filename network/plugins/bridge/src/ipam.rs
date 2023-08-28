@@ -9,7 +9,6 @@ use cni_plugin::{
     reply::{ErrorReply, IpamSuccessReply},
     Command,
 };
-use std::net::Ipv4Addr;
 use std::{collections::HashMap, net::IpAddr};
 
 pub async fn exec_cmd<'a>(
@@ -64,7 +63,7 @@ pub async fn configure_iface(ifname: String, res: IpamSuccessReply) -> Result<()
             ipc.address.prefix(),
         )
         .await
-        .map_err(|err| CniError::from(err))?;
+        .map_err(CniError::from)?;
     }
 
     Veth::link_set_up(&handle, ifname.clone()).await?;
@@ -73,7 +72,7 @@ pub async fn configure_iface(ifname: String, res: IpamSuccessReply) -> Result<()
         if let Some(IpAddr::V4(gw_addr)) = ipc.gateway {
             route::route_add_default(&handle, gw_addr)
                 .await
-                .map_err(|err| CniError::from(err))?;
+                .map_err(CniError::from)?;
         } else {
             return Err(CniError::Generic(format!(
                 "Failed to convert IpAddr to Ipv4Addr for adding default route to ifname: {}",
