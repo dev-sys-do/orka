@@ -3,10 +3,11 @@
 use std::pin::Pin;
 
 use orka_proto::scheduler_controller::{
-    scheduling_service_server::SchedulingService, SchedulingRequest, WorkloadStatus,
+    scheduling_service_server::SchedulingService, Empty, SchedulingRequest, WorkloadInstance,
+    WorkloadStatus,
 };
 use tokio_stream::Stream;
-use tonic::{Request, Response, Result};
+use tonic::{Request, Response, Result, Status};
 
 /// Implementation of the `SchedulingService` gRPC service.
 pub struct ControllerSchedulingSvc {}
@@ -52,5 +53,21 @@ impl SchedulingService for ControllerSchedulingSvc {
         //Ok(Response::new(
         //    Box::pin(output_stream) as Self::ScheduleStream
         //))
+    }
+
+    /// Called by the controller to request a workload instance to be gracefully stopped.
+    async fn stop(
+        &self,
+        _: Request<WorkloadInstance>,
+    ) -> std::result::Result<Response<Empty>, Status> {
+        todo!()
+    }
+
+    /// Called by the controller to request a workload instance to be terminated.
+    async fn destroy(
+        &self,
+        _: Request<WorkloadInstance>,
+    ) -> std::result::Result<Response<Empty>, Status> {
+        todo!()
     }
 }
