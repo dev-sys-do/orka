@@ -1,8 +1,8 @@
 PLUGINS_PATH='./target/debug:./vendors'
 NET_CONF_PATH='./test'
-CNITOOL_PATH='~/go/bin/cnitool'
+CNITOOL_PATH='$(HOME)/go/bin/cnitool'
+BUILT_BIN_PATH='./target/debug/bridge'
 
-ORKA_CNI_BIN='./target/debug/orka-cni'
 NETWORK_NAME='orknet'
 NS_NAME='testing'
 
@@ -22,7 +22,7 @@ check: .cargo-build
 	@echo ''
 
 version: .cargo-build
-	@echo '{"cniVersion": "1.0.0", "supportedVersions": [ "0.1.0", "0.2.0", "0.3.0", "0.3.1", "0.4.0", "1.0.0" ]}' | sudo CNI_COMMAND=VERSION $(ORKA_CNI_BIN)
+	@echo '{"cniVersion": "1.0.0", "supportedVersions": [ "0.1.0", "0.2.0", "0.3.0", "0.3.1", "0.4.0", "1.0.0" ]}' | sudo CNI_COMMAND=VERSION $(BUILT_BIN_PATH)
 	@echo ''
 
 download_vendors:

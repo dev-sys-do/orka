@@ -1,8 +1,8 @@
 PLUGINS_PATH='./target/debug:./vendors'
 NET_CONF_PATH='.'
-CNITOOL_PATH='/home/fermat/go/bin/cnitool'
+CNITOOL_PATH='$(HOME)/go/bin/cnitool'
+BUILT_BIN_PATH='./target/debug/orka-cni'
 
-ORKA_CNI_BIN='./target/debug/orka-cni'
 NETWORK_NAME='orknet'
 NS_NAME='testing'
 
@@ -22,11 +22,13 @@ check: .cargo-build
 	@echo ''
 
 version: .cargo-build
-	@echo '{"cniVersion": "1.0.0", "supportedVersions": [ "0.1.0", "0.2.0", "0.3.0", "0.3.1", "0.4.0", "1.0.0" ]}' | sudo CNI_COMMAND=VERSION $(ORKA_CNI_BIN)
+	@echo '{"cniVersion": "1.0.0", "supportedVersions": [ "0.1.0", "0.2.0", "0.3.0", "0.3.1", "0.4.0", "1.0.0" ]}' | sudo CNI_COMMAND=VERSION $(BUILT_BIN_PATH)
 	@echo ''
 
 download_vendors:
 	@mkdir -p ./vendors
 	@wget -O ./vendors/vendors.tgz https://github.com/containernetworking/plugins/releases/download/v1.3.0/cni-plugins-linux-amd64-v1.3.0.tgz
-	@cd ./vendors && tar vxzf vendors.tgz
+	@tar -xvf ./vendors/vendors.tgz -C ./vendors ./host-local
 	@rm ./vendors/vendors.tgz
+	@cd ../bridge && cargo build
+	@cp ../bridge/target/debug/bridge ./vendors/bridge
