@@ -1,7 +1,7 @@
+use crate::errors::ApiError;
 use crate::store::kv_manager::*;
 use crate::types::workload_request::WorkloadRequest;
-use crate::errors::ApiError;
-use axum::{Json, extract::Path};
+use axum::{extract::Path, Json};
 use serde_json::{self, json, Value};
 
 use uuid::Uuid;
@@ -13,18 +13,22 @@ pub async fn get_workloads(_body: String) -> anyhow::Result<Json<Value>, ApiErro
     let kv_store = KeyValueStore::new()?;
 
     let workloads = kv_store.select_workloads()?;
-    
-    Ok(Json(json!({"workloads": workloads})))
+
+    Ok(Json(json!({ "workloads": workloads })))
 }
 
-pub async fn get_specific_workload(Path(id): Path<String>) -> anyhow::Result<Json<Value>, ApiError> {
+pub async fn get_specific_workload(
+    Path(id): Path<String>,
+) -> anyhow::Result<Json<Value>, ApiError> {
     let kv_store = KeyValueStore::new()?;
 
     let workload = kv_store.workloads_bucket()?.get(&id)?;
 
     match workload {
         None => Ok(Json(json!({"description": "Workload not found"}))),
-        Some(workload_description) =>Ok(Json(json!({"description": workload_description.as_ref()})))
+        Some(workload_description) => {
+            Ok(Json(json!({"description": workload_description.as_ref()})))
+        }
     }
 }
 
@@ -48,9 +52,11 @@ pub async fn post_workload(body: String) -> anyhow::Result<Json<Value>, ApiError
     let id_with_prefix = format!("workload-{}-{}", json_body.workload.name, Uuid::new_v4());
 
     // Store the workload request in the database
-    kv_store.workloads_bucket()?.set(&id_with_prefix, &kv::Json(json_body))?;
+    kv_store
+        .workloads_bucket()?
+        .set(&id_with_prefix, &kv::Json(json_body))?;
 
-    Ok(Json(
-        json!({"Your workload is successfully created ": id_with_prefix}),
-    ))
+    Ok(Json(json!({
+        "Your workload is successfully created ": id_with_prefix
+    })))
 }

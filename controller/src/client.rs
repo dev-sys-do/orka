@@ -1,16 +1,16 @@
 use scheduler::scheduling_service_client::SchedulingServiceClient;
 use scheduler::SchedulingRequest;
-use tonic::Streaming;
 use tonic::transport::Channel;
+use tonic::Streaming;
 
-use self::scheduler::{WorkloadStatus, WorkloadInstance};
+use self::scheduler::{WorkloadInstance, WorkloadStatus};
 
 pub mod scheduler {
     tonic::include_proto!("scheduler.controller");
 }
 
 pub struct Client {
-    client: SchedulingServiceClient<Channel>
+    client: SchedulingServiceClient<Channel>,
 }
 
 impl Client {
@@ -21,7 +21,7 @@ impl Client {
 
     pub async fn schedule_workload(
         &mut self,
-        scheduling_request: SchedulingRequest
+        scheduling_request: SchedulingRequest,
     ) -> Result<Streaming<WorkloadStatus>, tonic::Status> {
         let response = self.client.schedule(scheduling_request).await?;
 
@@ -32,7 +32,7 @@ impl Client {
 
     pub async fn stop_instance(
         &mut self,
-        instance: WorkloadInstance
+        instance: WorkloadInstance,
     ) -> Result<scheduler::Empty, tonic::Status> {
         let response = self.client.stop(instance).await?;
 
@@ -41,7 +41,7 @@ impl Client {
 
     pub async fn destroy_instance(
         &mut self,
-        instance: WorkloadInstance
+        instance: WorkloadInstance,
     ) -> Result<scheduler::Empty, tonic::Status> {
         let response = self.client.destroy(instance).await?;
 
