@@ -1,35 +1,38 @@
+use crate::client::scheduler::{SchedulingRequest, Workload, WorkloadInstance};
 use crate::client::Client;
-use crate::client::scheduler::{Workload, SchedulingRequest, WorkloadInstance};
 use crate::errors::ApiError;
 use crate::store::kv_manager::{KeyValueStore, DB_BATCH};
 use crate::types::instance_request::InstanceRequest;
-use axum::Json;
+use crate::types::instance_status::InstanceStatus;
 use axum::extract::Path;
+use axum::Json;
+use log::{error, trace};
 use serde_json::{self, json, Value};
 use validator::Validate;
-use log::{trace, error};
-use crate::types::instance_status::InstanceStatus;
 
 pub async fn get_instances(_body: String) -> anyhow::Result<Json<Value>, ApiError> {
     let kv_store = KeyValueStore::new()?;
     let instance_list = kv_store.select_instances()?;
-    Ok(Json(json!({"instances": instance_list})))
-    
+    Ok(Json(json!({ "instances": instance_list })))
 }
 
-pub async fn get_specific_instance(Path(id): Path<String>) -> anyhow::Result<Json<Value>, ApiError> {
+pub async fn get_specific_instance(
+    Path(id): Path<String>,
+) -> anyhow::Result<Json<Value>, ApiError> {
     let kv_store = KeyValueStore::new()?;
     let instance = kv_store.instances_bucket()?.get(&id)?;
     match instance {
         None => Ok(Json(json!({"description": "Instance not found"}))),
-        Some(instance_status) =>Ok(Json(json!({"description": instance_status.as_ref()})))
+        Some(instance_status) => Ok(Json(json!({"description": instance_status.as_ref()}))),
     }
 }
 
 pub async fn delete_instance(Path(id): Path<String>) -> anyhow::Result<Json<Value>, ApiError> {
     let mut client = Client::new().await?;
 
-    let instance = WorkloadInstance {instance_id: id.clone()};
+    let instance = WorkloadInstance {
+        instance_id: id.clone(),
+    };
 
     client.stop_instance(instance).await?;
 
@@ -39,14 +42,18 @@ pub async fn delete_instance(Path(id): Path<String>) -> anyhow::Result<Json<Valu
 
     match instance {
         Some(_inst) => Ok(Json(json!({"description": "Deleted"}))),
-        None => Ok(Json(json!({"description": "Instance not found"})))
+        None => Ok(Json(json!({"description": "Instance not found"}))),
     }
 }
 
-pub async fn delete_instance_force(Path(id): Path<String>) -> anyhow::Result<Json<Value>, ApiError> {
+pub async fn delete_instance_force(
+    Path(id): Path<String>,
+) -> anyhow::Result<Json<Value>, ApiError> {
     let mut client = Client::new().await?;
 
-    let instance = WorkloadInstance {instance_id: id.clone()};
+    let instance = WorkloadInstance {
+        instance_id: id.clone(),
+    };
 
     client.destroy_instance(instance).await?;
 
@@ -56,7 +63,7 @@ pub async fn delete_instance_force(Path(id): Path<String>) -> anyhow::Result<Jso
 
     match instance {
         Some(_inst) => Ok(Json(json!({"description": "Deleted"}))),
-        None => Ok(Json(json!({"description": "Instance not found"})))
+        None => Ok(Json(json!({"description": "Instance not found"}))),
     }
 }
 
@@ -81,25 +88,31 @@ pub async fn post_instance(body: String) -> anyhow::Result<Json<Value>, ApiError
             // We spawn a thread to handle the request
             let mut client = Client::new().await?;
 
+            let instance_id = workload.instance_id.clone();
+
             let request = SchedulingRequest {
                 workload: Some(workload),
             };
-        
+
             let mut stream = client.schedule_workload(request).await?;
 
             tokio::spawn(async move {
                 while let Some(status) = stream.message().await.unwrap() {
                     trace!("STATUS={:?}", status);
-                    let result = DB_BATCH.lock().unwrap().set(&status.instance_id, &kv::Json(InstanceStatus::from(&status)));
+                    let result = DB_BATCH.lock().unwrap().batch.set(
+                        &status.instance_id,
+                        &kv::Json(InstanceStatus::from(&status)),
+                    );
                     match result {
-                        Ok(()) => {},
-                        Err(e) => error!("{}", e)
+                        Ok(()) => {}
+                        Err(e) => error!("{}", e),
                     }
                 }
             });
 
-            Ok(Json(json!({"description": "Instance creation started"})))
-        },
+            Ok(Json(json!({
+                "description": format!("Instance creation started, id: {}", instance_id)
+            })))
+        }
     }
-    
 }

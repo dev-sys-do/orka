@@ -7,23 +7,24 @@ mod types;
 use crate::client::scheduler;
 
 use client::scheduler::WorkloadInstance;
-use store::kv_manager::{KeyValueStore, DB_BATCH};
+use store::kv_manager::{KeyValueBatch, KeyValueStore, DB_BATCH};
 use tokio::sync::mpsc;
 use tokio_stream::wrappers::ReceiverStream;
 use tonic::{transport::Server, Request, Response, Status};
 
 use axum::Router;
 use scheduler::scheduling_service_server::{SchedulingService, SchedulingServiceServer};
-use scheduler::{SchedulingRequest, WorkloadStatus, workload_status::Status as DeploymentStatus};
+use scheduler::{workload_status::Status as DeploymentStatus, SchedulingRequest, WorkloadStatus};
 use std::net::SocketAddr;
-use std::sync::Arc;
 use std::thread;
 use std::time::Duration;
 use tokio::task;
 
 use axum::routing::{delete, post};
-use log::{info, error};
-use routes::instances::{delete_instance, delete_instance_force, get_instances, get_specific_instance, post_instance};
+use log::{error, info};
+use routes::instances::{
+    delete_instance, delete_instance_force, get_instances, get_specific_instance, post_instance,
+};
 use routes::workloads::{delete_workload, get_specific_workload, get_workloads, post_workload};
 
 #[derive(Debug, Default)]
@@ -33,14 +34,20 @@ pub struct Scheduler {}
 impl SchedulingService for Scheduler {
     type ScheduleStream = ReceiverStream<Result<WorkloadStatus, Status>>;
 
-    async fn stop(&self, request: Request<WorkloadInstance>) -> Result<Response<scheduler::Empty>, Status> {
+    async fn stop(
+        &self,
+        request: Request<WorkloadInstance>,
+    ) -> Result<Response<scheduler::Empty>, Status> {
         info!("{:?}", request);
-        Ok(Response::new(scheduler::Empty {  }))
+        Ok(Response::new(scheduler::Empty {}))
     }
 
-    async fn destroy(&self, request: Request<WorkloadInstance>) -> Result<Response<scheduler::Empty>, Status> {
+    async fn destroy(
+        &self,
+        request: Request<WorkloadInstance>,
+    ) -> Result<Response<scheduler::Empty>, Status> {
         info!("{:?}", request);
-        Ok(Response::new(scheduler::Empty {  }))
+        Ok(Response::new(scheduler::Empty {}))
     }
 
     async fn schedule(
@@ -57,17 +64,26 @@ impl SchedulingService for Scheduler {
             let fake_statuses_response = vec![
                 WorkloadStatus {
                     instance_id: workload.instance_id.clone(),
-                    status: Some(DeploymentStatus {code: 0, message: Some("The workload is waiting".to_string())}),
+                    status: Some(DeploymentStatus {
+                        code: 0,
+                        message: Some("The workload is waiting".to_string()),
+                    }),
                     ..Default::default()
                 },
                 WorkloadStatus {
                     instance_id: workload.instance_id.clone(),
-                    status: Some(DeploymentStatus {code: 1, message: Some("The workload is running".to_string())}),
+                    status: Some(DeploymentStatus {
+                        code: 1,
+                        message: Some("The workload is running".to_string()),
+                    }),
                     ..Default::default()
                 },
                 WorkloadStatus {
                     instance_id: workload.instance_id.clone(),
-                    status: Some(DeploymentStatus {code: 2, message: Some("The workload is terminated".to_string())}),
+                    status: Some(DeploymentStatus {
+                        code: 2,
+                        message: Some("The workload is terminated".to_string()),
+                    }),
                     ..Default::default()
                 },
             ];
@@ -139,22 +155,28 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             .unwrap();
     });
 
-    let db_batch = Arc::clone(&DB_BATCH);
-
     // Create a thread to sync the batch with the database
     let db_thread = task::spawn(async move {
         loop {
             thread::sleep(Duration::from_secs(5));
-            let kv_batch = db_batch.lock();
+            let kv_batch = DB_BATCH.lock();
             let kv_store = KeyValueStore::new();
             match kv_batch {
-                Ok(batch) => {
+                Ok(mut kvbatch) => {
                     match kv_store {
-                        Ok(store) => store.instances_bucket().unwrap().batch(batch.clone()).unwrap(),
-                        Err(e) => error!("{}", e)
+                        Ok(store) => {
+                            store
+                                .instances_bucket()
+                                .unwrap()
+                                .batch(kvbatch.batch.clone())
+                                .unwrap();
+                            // Clear batch after update
+                            *kvbatch = KeyValueBatch::new();
+                        }
+                        Err(e) => error!("{}", e),
                     }
                 }
-                Err(e) => error!("{}", e)
+                Err(e) => error!("{}", e),
             }
         }
     });

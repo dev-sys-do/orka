@@ -1,10 +1,44 @@
-use std::sync::{Arc, Mutex};
+use std::{
+    ops::{Deref, DerefMut},
+    sync::Mutex,
+};
 
-use crate::types::{workload_request::WorkloadRequest, instance_status::InstanceStatus};
+use crate::types::{instance_status::InstanceStatus, workload_request::WorkloadRequest};
 use kv::*;
 use once_cell::sync::Lazy;
 
-pub static DB_BATCH: Lazy<Arc<Mutex<Batch<String, Json<InstanceStatus>>>>> = Lazy::new(|| {Arc::new(Mutex::new(Batch::new()))});
+pub static DB_BATCH: Lazy<Mutex<KeyValueBatch>> = Lazy::new(|| Mutex::new(KeyValueBatch::new()));
+
+pub struct KeyValueBatch {
+    pub batch: Batch<String, Json<InstanceStatus>>,
+}
+
+impl KeyValueBatch {
+    pub fn new() -> Self {
+        Self {
+            batch: Batch::new(),
+        }
+    }
+}
+
+impl Default for KeyValueBatch {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+impl Deref for KeyValueBatch {
+    type Target = Batch<String, Json<InstanceStatus>>;
+    fn deref(&self) -> &Self::Target {
+        &self.batch
+    }
+}
+
+impl DerefMut for KeyValueBatch {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        &mut self.batch
+    }
+}
 
 pub struct KeyValueStore {
     store: Store,
@@ -17,16 +51,18 @@ impl KeyValueStore {
 
         // Open the key/value store
         let store = Store::new(cfg)?;
-        
+
         Ok(Self { store })
     }
 
     pub fn workloads_bucket(&self) -> Result<Bucket<'_, String, Json<WorkloadRequest>>, Error> {
-        Ok(self.store.bucket::<String, Json<WorkloadRequest>>(Some("workloads"))?)
+        self.store
+            .bucket::<String, Json<WorkloadRequest>>(Some("workloads"))
     }
 
     pub fn instances_bucket(&self) -> Result<Bucket<'_, String, Json<InstanceStatus>>, Error> {
-        Ok(self.store.bucket::<String, Json<InstanceStatus>>(Some("instances"))?)
+        self.store
+            .bucket::<String, Json<InstanceStatus>>(Some("instances"))
     }
 
     // Get an array of workload ids
@@ -46,5 +82,4 @@ impl KeyValueStore {
         }
         Ok(instances)
     }
-
 }

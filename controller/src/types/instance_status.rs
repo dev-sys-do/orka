@@ -1,7 +1,10 @@
-use serde::{Deserialize,Serialize};
+use serde::{Deserialize, Serialize};
 use validator::Validate;
 
-use crate::client::scheduler::{WorkloadStatus, workload_status::{Resources, Status}};
+use crate::client::scheduler::{
+    workload_status::{Resources, Status},
+    WorkloadStatus,
+};
 
 #[derive(Debug, Validate, Deserialize, Serialize, Clone)]
 pub struct InstanceStatus {
@@ -13,10 +16,14 @@ pub struct InstanceStatus {
 
 impl From<&WorkloadStatus> for InstanceStatus {
     fn from(status: &WorkloadStatus) -> Self {
-        InstanceStatus { 
+        InstanceStatus {
             name: status.instance_id.clone(),
             status_code: InstanceStatusCode::from(status.status.clone()),
-            resource_usage: InstanceResources { cpu: 1, memory: 1, disk: 1 },
+            resource_usage: InstanceResources {
+                cpu: 1,
+                memory: 1,
+                disk: 1,
+            },
         }
     }
 }
@@ -32,7 +39,11 @@ pub struct InstanceResources {
 
 impl From<Resources> for InstanceResources {
     fn from(res: Resources) -> Self {
-        InstanceResources { cpu: res.cpu, memory: res.memory, disk: res.disk }
+        InstanceResources {
+            cpu: res.cpu,
+            memory: res.memory,
+            disk: res.disk,
+        }
     }
 }
 
@@ -45,9 +56,14 @@ pub struct InstanceStatusCode {
 impl From<Option<Status>> for InstanceStatusCode {
     fn from(status: Option<Status>) -> Self {
         match status {
-            Some(st) => InstanceStatusCode { code: st.code, message: st.message.clone() },
-            None => InstanceStatusCode { code: 0, message: Some(String::from("No status found")) }
+            Some(st) => InstanceStatusCode {
+                code: st.code,
+                message: st.message,
+            },
+            None => InstanceStatusCode {
+                code: 0,
+                message: Some(String::from("No status found")),
+            },
         }
-        
     }
 }
