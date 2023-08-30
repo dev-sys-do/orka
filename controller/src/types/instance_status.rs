@@ -17,7 +17,7 @@ pub struct InstanceStatus {
 impl From<&WorkloadStatus> for InstanceStatus {
     fn from(status: &WorkloadStatus) -> Self {
         InstanceStatus {
-            name: status.instance_id.clone(),
+            name: (*status.instance_id).to_string(),
             status_code: InstanceStatusCode::from(status.status.clone()),
             resource_usage: InstanceResources {
                 cpu: 1,

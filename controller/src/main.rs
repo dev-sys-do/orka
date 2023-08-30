@@ -79,7 +79,7 @@ impl SchedulingService for Scheduler {
                     ..Default::default()
                 },
                 WorkloadStatus {
-                    instance_id: workload.instance_id.clone(),
+                    instance_id: workload.instance_id,
                     status: Some(DeploymentStatus {
                         code: 2,
                         message: Some("The workload is terminated".to_string()),

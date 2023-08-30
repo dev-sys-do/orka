@@ -31,7 +31,7 @@ pub async fn delete_instance(Path(id): Path<String>) -> anyhow::Result<Json<Valu
     let mut client = Client::new().await?;
 
     let instance = WorkloadInstance {
-        instance_id: id.clone(),
+        instance_id: (*id).to_string(),
     };
 
     client.stop_instance(instance).await?;
@@ -52,7 +52,7 @@ pub async fn delete_instance_force(
     let mut client = Client::new().await?;
 
     let instance = WorkloadInstance {
-        instance_id: id.clone(),
+        instance_id: (*id).to_string(),
     };
 
     client.destroy_instance(instance).await?;
@@ -80,15 +80,13 @@ pub async fn post_instance(body: String) -> anyhow::Result<Json<Value>, ApiError
     match workload_request {
         None => Ok(Json(json!({"description": "Workload not found"}))),
         Some(json_request) => {
-            let wr = json_request.as_ref().clone();
-
             // Create a grpc workload object
-            let workload = Workload::from(wr.workload.clone());
+            let workload = Workload::from(json_request.0.workload);
 
             // We spawn a thread to handle the request
             let mut client = Client::new().await?;
 
-            let instance_id = workload.instance_id.clone();
+            let instance_id = (*workload.instance_id).to_string();
 
             let request = SchedulingRequest {
                 workload: Some(workload),
