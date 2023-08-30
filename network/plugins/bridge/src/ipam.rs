@@ -3,11 +3,11 @@ use crate::{
     links::{link::Link, veth::Veth},
     route,
 };
-use cni_plugin::{config::NetworkConfig, error::CniError, reply::IpamSuccessReply, Command};
+use cni_plugin::{config::NetworkConfig, error::CniError, reply::SuccessReply, Command};
 use std::{collections::HashMap, net::IpAddr};
 
-pub async fn exec_cmd(cmd: Command, config: NetworkConfig) -> Result<IpamSuccessReply, CniError> {
-    delegate::<IpamSuccessReply>("host-local", cmd, &create_delegation_config(config)?).await
+pub async fn exec_cmd(cmd: Command, config: NetworkConfig) -> Result<SuccessReply, CniError> {
+    delegate::<SuccessReply>("host-local", cmd, &create_delegation_config(config)?).await
 }
 
 pub fn create_delegation_config(parent_config: NetworkConfig) -> Result<NetworkConfig, CniError> {
@@ -35,7 +35,7 @@ pub fn create_delegation_config(parent_config: NetworkConfig) -> Result<NetworkC
     })
 }
 
-pub async fn configure_iface(ifname: String, res: IpamSuccessReply) -> Result<(), CniError> {
+pub async fn configure_iface(ifname: String, res: SuccessReply) -> Result<(), CniError> {
     let (connection, handle, _) = rtnetlink::new_connection().unwrap();
     tokio::spawn(connection);
 

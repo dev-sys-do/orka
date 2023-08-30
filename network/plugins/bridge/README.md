@@ -5,8 +5,7 @@
 First, install cnitool:
 
 ```bash
-go get github.com/containernetworking/cni
-go install github.com/containernetworking/cni/cnitool
+go install github.com/containernetworking/cni/cnitool@latest
 ```
 
 Download `host-local` plugin:

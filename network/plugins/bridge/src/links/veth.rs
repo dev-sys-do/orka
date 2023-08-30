@@ -16,18 +16,29 @@ pub struct Veth {
 #[async_trait]
 impl Link for Veth {
     async fn link_add(&self, handle: &Handle) -> Result<(), CniError> {
-        handle
+        let mut links = handle
             .link()
-            .add()
-            .veth(self.linkattrs.name.clone(), self.peer_name.clone())
-            .execute()
-            .await
-            .map_err(|e| {
-                CniError::Generic(format!(
-                    "Failed to add veth pair: {} and {} (peer). (fn link_add) {}",
-                    self.linkattrs.name, self.peer_name, e
-                ))
-            })?;
+            .get()
+            .match_name(self.linkattrs.name.clone())
+            .execute();
+        match links.try_next().await {
+            Ok(Some(_)) => Err(CniError::Generic(format!(
+                "Container veth name provided `{}` already exists. (fn link_add)",
+                self.linkattrs.name
+            ))),
+            _ => handle
+                .link()
+                .add()
+                .veth(self.linkattrs.name.clone(), self.peer_name.clone())
+                .execute()
+                .await
+                .map_err(|e| {
+                    CniError::Generic(format!(
+                        "Failed to add veth pair: {} and {} (peer). (fn link_add) {}",
+                        self.linkattrs.name, self.peer_name, e
+                    ))
+                }),
+        }?;
 
         let mut links = handle
             .link()

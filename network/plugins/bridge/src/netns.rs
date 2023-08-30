@@ -10,7 +10,7 @@ use std::{path::PathBuf, process};
 fn get_fd_from_path(path: PathBuf) -> Result<i32, CniError> {
     let fd: i32 = open(path.as_path(), OFlag::O_RDONLY, Mode::empty()).map_err(|e| {
         CniError::Generic(format!(
-            "Failed to convert {:?} from PathBuf to i32 (fd). (fn get_fd_from_path) {}",
+            "Failed to open netns: {:?}. (fn get_fd_from_path) {}",
             path, e
         ))
     })?;

@@ -116,21 +116,8 @@ impl Bridge {
         Ok(br)
     }
 
-    // async fn bridge_by_name(handle: &Handle, br_name: String) -> u32 {
-    //     let mut links = handle.link().get().match_name(br_name.clone()).execute();
-    //     match links.try_next().await {
-    //         Ok(Some(link)) => {
-    //             println!("[ORKANET]: `FLAGS` {}", link.header.flags);
-    //             link.header.index
-    //         }
-    //         Ok(None) => panic!("[ORKANET]: Could not lookup {}.", br_name),
-    //         Err(_) => panic!("[ORKANET]: Could not lookup {}.", br_name),
-    //     }
-    //     // Maybe check if it's bridge
-    // }
-
     pub async fn setup_veth(
-        &self,
+        br_name: String,
         netns: PathBuf,
         ifname: String,
         config: NetworkConfig,
@@ -169,12 +156,7 @@ impl Bridge {
             .await?;
 
         // connect host veth end to the bridge
-        Self::link_set_master(
-            &handle_host,
-            host_veth_name.clone(),
-            self.linkattrs.name.clone(),
-        )
-        .await?;
+        Self::link_set_master(&handle_host, host_veth_name.clone(), br_name).await?;
 
         // ? set hairpin mode ?
         // ? remove default vlan ?
@@ -193,4 +175,8 @@ impl Bridge {
 
         Ok((host_iface, cont_iface))
     }
+
+    // async fn ensure_addr(gw_addr: IpAddr) -> Result<(), CniError> {
+
+    // }
 }

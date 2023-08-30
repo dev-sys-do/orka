@@ -10,6 +10,7 @@ digest = "0.10.7"
 futures = "0.3.28"
 libc = "0.2.147"
 log = "0.4.20"
+netlink-packet-route = "0.17.1"
 nix = "0.26.2"
 rand = { version = "0.8.5", features = ["small_rng"] }
 rtnetlink = "0.13.1"

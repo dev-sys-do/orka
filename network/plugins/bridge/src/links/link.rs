@@ -1,8 +1,12 @@
 use async_trait::async_trait;
 use cni_plugin::{error::CniError, macaddr::MacAddr};
 use futures::stream::TryStreamExt;
+use netlink_packet_route::{
+    nlas::link::{Nla, State},
+    LinkMessage,
+};
 use rtnetlink::Handle;
-use std::net::IpAddr;
+use std::{net::IpAddr, thread::sleep, time::Duration};
 
 #[derive(Clone)]
 pub struct LinkAttrs {
@@ -20,6 +24,19 @@ pub struct LinkAttrs {
 #[async_trait]
 pub trait Link {
     async fn link_add(&self, handle: &Handle) -> Result<(), CniError>;
+
+    async fn link_by_name(handle: &Handle, name: String) -> Result<LinkMessage, CniError> {
+        let mut links = handle.link().get().match_name(name.clone()).execute();
+        match links.try_next().await {
+            Ok(Some(link)) => Ok(link),
+            _ => {
+                return Err(CniError::Generic(format!(
+                    "Failed to get link {}. (fn link_addr_add)",
+                    name
+                )))
+            }
+        }
+    }
 
     async fn link_addr_add(
         handle: &Handle,
@@ -126,6 +143,66 @@ pub trait Link {
                 }),
             _ => Err(CniError::Generic(format!(
                 "Could not set up {}. (fn link_set_up)",
+                name
+            ))),
+        }
+    }
+
+    async fn link_check_oper_up(name: String) -> Result<(), CniError> {
+        let (connection, handle, _) = rtnetlink::new_connection().unwrap();
+        tokio::spawn(connection);
+
+        let retries: Vec<i32> = vec![0, 50, 500, 1000, 1000];
+        for (_idx, &sleep_duration) in retries.iter().enumerate() {
+            sleep(Duration::from_millis(sleep_duration as u64));
+
+            let host_veth: LinkMessage = Self::link_by_name(&handle, name.clone()).await?;
+            let option_index: Option<usize> = host_veth
+                .nlas
+                .iter()
+                .position(|nla| nla == &Nla::OperState(State::Up));
+
+            if let Some(i) = option_index {
+                if let Some(nla) = host_veth.nlas.get(i) {
+                    println!(
+                        "LINK BY NAME: is present ? {:?} : {:?}",
+                        nla,
+                        host_veth.nlas.get(i).unwrap()
+                    );
+                    break;
+                } else {
+                    println!("LINK BY NAME: is present NON : {:?}", host_veth.nlas);
+                }
+            } else {
+                println!("LINK BY NAME: is present NON : {:?}", host_veth.nlas);
+            }
+        }
+
+        Ok(())
+    }
+
+    async fn del_link_by_name_addr(handle: &Handle, name: String) -> Result<(), CniError> {
+        let mut links = handle.link().get().match_name(name.clone()).execute();
+        match links.try_next().await {
+            Ok(Some(link)) => {
+                let mut addresses = handle
+                    .address()
+                    .get()
+                    .set_link_index_filter(link.header.index)
+                    .execute();
+                match addresses.try_next().await {
+                    Ok(Some(addr)) => {
+                        println!("GET ADDRESS: {:?}", addr.header);
+                        Ok(())
+                    }
+                    _ => Err(CniError::Generic(format!(
+                        "Failed to get IP addresses for {}. (fn del_link_by_name_addr)",
+                        name
+                    ))),
+                }
+            }
+            _ => Err(CniError::Generic(format!(
+                "Failed to get IP addresses for {}. (fn del_link_by_name_addr)",
                 name
             ))),
         }

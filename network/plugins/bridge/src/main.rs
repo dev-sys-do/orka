@@ -19,9 +19,14 @@ fn main() {
                     into_reply(result, &config).await;
                 });
             }
-            Cni::Del { config, .. } => {
+            Cni::Del {
+                ifname,
+                netns,
+                config,
+                ..
+            } => {
                 runtime.block_on(async move {
-                    let result = bridge::cmd_del().await;
+                    let result = bridge::cmd_del(ifname, netns.unwrap(), config.clone()).await;
                     into_reply(result, &config).await;
                 });
             }
