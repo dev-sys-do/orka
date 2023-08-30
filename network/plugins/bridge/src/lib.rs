@@ -79,8 +79,8 @@ pub async fn cmd_add(
         ));
     }
 
-    // Configure the container IP address(es)
     netns::exec::<_, _, ()>(netns, |_| async {
+        // Configure the container interface address(es) adn route(s)
         ipam::configure_iface(container_interface.name.clone(), ipam_result.clone()).await
     })
     .await?;

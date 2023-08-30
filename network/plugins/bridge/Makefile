@@ -1,6 +1,6 @@
 PLUGINS_PATH='./target/debug:./vendors'
 NET_CONF_PATH='./test'
-CNITOOL_PATH='/home/fermat/go/bin/cnitool'
+CNITOOL_PATH='~/go/bin/cnitool'
 
 ORKA_CNI_BIN='./target/debug/orka-cni'
 NETWORK_NAME='orknet'
@@ -27,6 +27,6 @@ version: .cargo-build
 
 download_vendors:
 	@mkdir -p ./vendors
-	@wget -O ./vendors/vendors.tgz https://github.com/containernetworking/plugins/releases/download/v1.3.0/cni-plugins-linux-amd64-v1.3.0.tgz
-	@cd ./vendors && tar vxzf vendors.tgz
-	@rm ./vendors/vendors.tgz ./vendors/bridge
+	@wget -O ./vendors.tgz https://github.com/containernetworking/plugins/releases/download/v1.3.0/cni-plugins-linux-amd64-v1.3.0.tgz
+	@tar -xvf vendors.tgz -C ./vendors ./host-local
+	@rm ./vendors.tgz
