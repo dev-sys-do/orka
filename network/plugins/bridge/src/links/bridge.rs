@@ -8,7 +8,6 @@ use cni_plugin::{config::NetworkConfig, error::CniError, macaddr::MacAddr, reply
 use futures::stream::TryStreamExt;
 use rtnetlink::Handle;
 use std::path::PathBuf;
-use tokio::task::JoinHandle;
 
 #[derive(Clone)]
 pub struct Bridge {
@@ -154,10 +153,10 @@ impl Bridge {
             netns::exec::<_, _, (String, Veth)>(netns.clone(), |host_ns_fd| async move {
                 // Handle for container namespace
                 let (connection_cont, handle_cont, _) = rtnetlink::new_connection().unwrap();
-                let join_handle: JoinHandle<()> = tokio::spawn(connection_cont);
+                tokio::spawn(connection_cont);
 
                 // create the veth pair in the container
-                let result = Veth::setup_veth(
+                Veth::setup_veth(
                     &handle_host_for_cont,
                     &handle_cont,
                     ifname,
@@ -165,10 +164,7 @@ impl Bridge {
                     mac,
                     host_ns_fd,
                 )
-                .await;
-
-                let _ = join_handle.await;
-                result
+                .await
             })
             .await?;
 
