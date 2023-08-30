@@ -23,7 +23,7 @@ use tokio::task;
 
 use axum::routing::{delete, post};
 use log::{info, error};
-use routes::instances::{delete_instance, get_instances, get_specific_instance, post_instance};
+use routes::instances::{delete_instance, delete_instance_force, get_instances, get_specific_instance, post_instance};
 use routes::workloads::{delete_workload, get_specific_workload, get_workloads, post_workload};
 
 #[derive(Debug, Default)]
@@ -34,11 +34,13 @@ impl SchedulingService for Scheduler {
     type ScheduleStream = ReceiverStream<Result<WorkloadStatus, Status>>;
 
     async fn stop(&self, request: Request<WorkloadInstance>) -> Result<Response<scheduler::Empty>, Status> {
-        todo!();
+        info!("{:?}", request);
+        Ok(Response::new(scheduler::Empty {  }))
     }
 
     async fn destroy(&self, request: Request<WorkloadInstance>) -> Result<Response<scheduler::Empty>, Status> {
-        todo!();
+        info!("{:?}", request);
+        Ok(Response::new(scheduler::Empty {  }))
     }
 
     async fn schedule(
@@ -49,20 +51,22 @@ impl SchedulingService for Scheduler {
 
         let (sender, receiver) = mpsc::channel(4);
 
+        let workload = request.into_inner().workload.unwrap();
+
         tokio::spawn(async move {
             let fake_statuses_response = vec![
                 WorkloadStatus {
-                    instance_id: "f7e05232-5c3a-4a5e-816e-a77c14342bc0".to_string(),
+                    instance_id: workload.instance_id.clone(),
                     status: Some(DeploymentStatus {code: 0, message: Some("The workload is waiting".to_string())}),
                     ..Default::default()
                 },
                 WorkloadStatus {
-                    instance_id: "f7e05232-5c3a-4a5e-816e-a77c14342bc0".to_string(),
+                    instance_id: workload.instance_id.clone(),
                     status: Some(DeploymentStatus {code: 1, message: Some("The workload is running".to_string())}),
                     ..Default::default()
                 },
                 WorkloadStatus {
-                    instance_id: "f7e05232-5c3a-4a5e-816e-a77c14342bc0".to_string(),
+                    instance_id: workload.instance_id.clone(),
                     status: Some(DeploymentStatus {code: 2, message: Some("The workload is terminated".to_string())}),
                     ..Default::default()
                 },
@@ -120,6 +124,10 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .route(
             "/instances/:id",
             delete(delete_instance).get(get_specific_instance),
+        )
+        .route(
+            "/instances/:id/force",
+            delete(delete_instance_force).get(get_specific_instance),
         );
 
     // Spawn the HTTP server as a tokio task

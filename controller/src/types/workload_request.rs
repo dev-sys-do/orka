@@ -1,4 +1,5 @@
 use serde::{Deserialize, Serialize};
+use uuid::Uuid;
 use validator::{Validate, ValidationError};
 
 use crate::client::scheduler::{self, workload::{Type, Resources}};
@@ -59,7 +60,7 @@ impl From<Workload> for scheduler::Workload {
     fn from(workload: Workload) -> scheduler::Workload {
         // Create a grpc workload object
         scheduler::Workload {
-            instance_id: workload.name,
+            instance_id: format!("instance-{}-{}", workload.name, Uuid::new_v4()),
             r#type: Type::Container.into(),
             image: workload.image,
             environment: workload.environment,
