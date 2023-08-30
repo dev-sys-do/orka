@@ -3,27 +3,11 @@ use crate::{
     links::{link::Link, veth::Veth},
     route,
 };
-use cni_plugin::{
-    config::NetworkConfig,
-    error::CniError,
-    reply::{ErrorReply, IpamSuccessReply},
-    Command,
-};
+use cni_plugin::{config::NetworkConfig, error::CniError, reply::IpamSuccessReply, Command};
 use std::{collections::HashMap, net::IpAddr};
 
-pub async fn exec_cmd<'a>(
-    cmd: Command,
-    config: NetworkConfig,
-) -> Result<IpamSuccessReply, ErrorReply<'a>> {
-    let cni_version = config.cni_version.clone();
-
-    delegate::<IpamSuccessReply>(
-        "host-local",
-        cmd,
-        &create_delegation_config(config).map_err(|e| e.into_reply(cni_version.clone()))?,
-    )
-    .await
-    .map_err(|e| e.into_reply(cni_version))
+pub async fn exec_cmd(cmd: Command, config: NetworkConfig) -> Result<IpamSuccessReply, CniError> {
+    delegate::<IpamSuccessReply>("host-local", cmd, &create_delegation_config(config)?).await
 }
 
 pub fn create_delegation_config(parent_config: NetworkConfig) -> Result<NetworkConfig, CniError> {

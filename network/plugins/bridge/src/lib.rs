@@ -17,10 +17,8 @@ use serde_json::json;
 use std::{collections::HashMap, path::PathBuf};
 
 pub async fn cmd_add(
-    _container_id: String,
     ifname: String,
     netns: PathBuf,
-    _path: Vec<PathBuf>,
     mut config: NetworkConfig,
 ) -> Result<SuccessReply, CniError> {
     // let mut success: bool = false;
@@ -73,9 +71,7 @@ pub async fn cmd_add(
     let (host_interface, container_interface) =
         br.setup_veth(netns.clone(), ifname, config.clone()).await?;
 
-    let ipam_result: IpamSuccessReply = ipam::exec_cmd(Command::Add, config.clone())
-        .await
-        .map_err(|e| CniError::Generic(format!("{:?}", e)))?;
+    let ipam_result: IpamSuccessReply = ipam::exec_cmd(Command::Add, config.clone()).await?;
 
     if ipam_result.ips.is_empty() {
         return Err(CniError::Generic(
@@ -109,22 +105,10 @@ pub async fn cmd_add(
     })
 }
 
-pub async fn cmd_check(
-    _container_id: String,
-    _ifname: String,
-    _netns: PathBuf,
-    _path: Vec<PathBuf>,
-    _config: NetworkConfig,
-) -> Result<SuccessReply, CniError> {
+pub async fn cmd_check() -> Result<SuccessReply, CniError> {
     todo!();
 }
 
-pub async fn cmd_del(
-    _container_id: String,
-    _ifname: String,
-    _netns: Option<PathBuf>,
-    _path: Vec<PathBuf>,
-    _config: NetworkConfig,
-) -> Result<SuccessReply, CniError> {
+pub async fn cmd_del() -> Result<SuccessReply, CniError> {
     todo!();
 }
