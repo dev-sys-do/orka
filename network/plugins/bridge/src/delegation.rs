@@ -43,7 +43,7 @@ where
 
     match delegate_command(&plugin, command, &config_bytes).await {
         Ok((status, stdout)) => {
-            if stdout.is_empty() {
+            if stdout.is_empty() && !(sub_plugin == "host-local" && command.as_ref() == "DEL") {
                 if matches!(command, Command::Add) {
                     delegate_command(&plugin, Command::Del, &config_bytes)
                         .await
@@ -60,13 +60,27 @@ where
             }
 
             if status.success() {
-                let reader = Cursor::new(stdout);
-                Ok(
-                    serde_json::from_reader(reader).map_err(|err| CniError::Delegated {
-                        plugin: sub_plugin.into(),
-                        err: Box::new(err.into()),
-                    })?,
-                )
+                if sub_plugin == "host-local" && command.as_ref() == "DEL" {
+                    let res: String = format!("
+                    {{
+                        \"cniVersion\": \"{}\",
+                        \"dns\": {{}}
+                    }}", config.cni_version);
+                    Ok(
+                        serde_json::from_str(&res).map_err(|err| CniError::Delegated {
+                            plugin: sub_plugin.into(),
+                            err: Box::new(err.into()),
+                        })?,
+                    )
+                } else {
+                    let reader = Cursor::new(stdout);
+                    Ok(
+                        serde_json::from_reader(reader).map_err(|err| CniError::Delegated {
+                            plugin: sub_plugin.into(),
+                            err: Box::new(err.into()),
+                        })?,
+                    )
+                }
             } else {
                 if matches!(command, Command::Add) {
                     delegate_command(&plugin, Command::Del, &config_bytes)

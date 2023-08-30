@@ -1,12 +1,16 @@
 use async_trait::async_trait;
 use cni_plugin::{error::CniError, macaddr::MacAddr};
 use futures::stream::TryStreamExt;
+use log::info;
 use netlink_packet_route::{
-    nlas::link::{Nla, State},
+    address,
+    nlas::link::{self, State},
     LinkMessage,
 };
 use rtnetlink::Handle;
 use std::{net::IpAddr, thread::sleep, time::Duration};
+
+use crate::links::utils::convert_to_ip;
 
 #[derive(Clone)]
 pub struct LinkAttrs {
@@ -160,30 +164,30 @@ pub trait Link {
             let option_index: Option<usize> = host_veth
                 .nlas
                 .iter()
-                .position(|nla| nla == &Nla::OperState(State::Up));
+                .position(|nla| nla == &link::Nla::OperState(State::Up));
 
             if let Some(i) = option_index {
                 if let Some(nla) = host_veth.nlas.get(i) {
-                    println!(
+                    info!(
                         "LINK BY NAME: is present ? {:?} : {:?}",
                         nla,
                         host_veth.nlas.get(i).unwrap()
                     );
                     break;
                 } else {
-                    println!("LINK BY NAME: is present NON : {:?}", host_veth.nlas);
+                    info!("LINK BY NAME: is present NON : {:?}", host_veth.nlas);
                 }
             } else {
-                println!("LINK BY NAME: is present NON : {:?}", host_veth.nlas);
+                info!("LINK BY NAME: is present NON : {:?}", host_veth.nlas);
             }
         }
 
         Ok(())
     }
 
-    async fn del_link_by_name_addr(handle: &Handle, name: String) -> Result<(), CniError> {
+    async fn del_link_by_name_addr(handle: &Handle, name: String) -> Result<IpAddr, CniError> {
         let mut links = handle.link().get().match_name(name.clone()).execute();
-        match links.try_next().await {
+        let addr: IpAddr = match links.try_next().await {
             Ok(Some(link)) => {
                 let mut addresses = handle
                     .address()
@@ -192,8 +196,20 @@ pub trait Link {
                     .execute();
                 match addresses.try_next().await {
                     Ok(Some(addr)) => {
-                        println!("GET ADDRESS: {:?}", addr.header);
-                        Ok(())
+                        let addresses: Vec<u8> = addr
+                            .nlas
+                            .iter()
+                            .filter_map(|nla| {
+                                if let address::Nla::Address(addr) = nla.to_owned() {
+                                    Some(addr)
+                                } else {
+                                    None
+                                }
+                            })
+                            .flatten()
+                            .collect();
+
+                        convert_to_ip(addresses)
                     }
                     _ => Err(CniError::Generic(format!(
                         "Failed to get IP addresses for {}. (fn del_link_by_name_addr)",
@@ -205,6 +221,27 @@ pub trait Link {
                 "Failed to get IP addresses for {}. (fn del_link_by_name_addr)",
                 name
             ))),
-        }
+        }?;
+
+        let mut links = handle.link().get().match_name(name.clone()).execute();
+        match links.try_next().await {
+            Ok(Some(link)) => handle
+                .link()
+                .del(link.header.index)
+                .execute()
+                .await
+                .map_err(|e| {
+                    CniError::Generic(format!(
+                        "Failed to delete link {}. (fn del_link_by_name_addr) {}",
+                        name, e
+                    ))
+                }),
+            _ => Err(CniError::Generic(format!(
+                "Failed to delete link {}. (fn del_link_by_name_addr)",
+                name
+            ))),
+        }?;
+
+        Ok(addr)
     }
 }

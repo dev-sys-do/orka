@@ -9,12 +9,12 @@ use crate::types::NetworkConfigReference::*;
 use cni_plugin::{
     config::NetworkConfig,
     error::CniError,
-    reply::{Interface, SuccessReply},
+    reply::{Dns, Interface, SuccessReply},
     Command,
 };
 use links::{bridge::Bridge, link::Link, veth::Veth};
 use serde_json::json;
-use std::{collections::HashMap, path::PathBuf};
+use std::{collections::HashMap, net::IpAddr, path::PathBuf};
 
 pub async fn cmd_add(
     ifname: String,
@@ -120,29 +120,46 @@ pub async fn cmd_del(
     netns: PathBuf,
     config: NetworkConfig,
 ) -> Result<SuccessReply, CniError> {
-    // Delegate to `host-local` plugin
-    let ipam_result: SuccessReply = ipam::exec_cmd(Command::Del, config.clone()).await?;
-    println!("{:?}", ipam_result);
+    if netns == PathBuf::from("") {
+        let _: SuccessReply = ipam::exec_cmd(Command::Del, config.clone()).await?;
+    }
 
     // There is a netns so try to clean up. Delete can be called multiple times
     // so don't return an error if the device is already removed.
     // If the device isn't there then don't try to clean up IP masq either.
-    let (connection, handle, _) = rtnetlink::new_connection().unwrap();
-    tokio::spawn(connection);
+    let _: IpAddr = match netns::exec::<_, _, IpAddr>(netns, |_| async {
+        let (connection, handle, _) = rtnetlink::new_connection().unwrap();
+        tokio::spawn(connection);
 
-    netns::exec::<_, _, ()>(netns, |_| async {
-        Veth::del_link_by_name_addr(&handle, ifname).await?;
-
-        Ok(())
+        Veth::del_link_by_name_addr(&handle, ifname).await
     })
-    .await?;
+    .await
+    {
+        Ok(addr) => addr,
+        Err(e) => {
+            let _: SuccessReply = ipam::exec_cmd(Command::Del, config.clone()).await?;
+            return Err(e);
+        }
+    };
+
+    // call ipam.ExecDel after clean up device in netns
+    let _: SuccessReply = ipam::exec_cmd(Command::Del, config.clone()).await?;
+
+    // if ipMasq {
+    //     ipnet
+    // }
 
     Ok(SuccessReply {
         cni_version: config.cni_version,
         interfaces: Vec::from([]),
-        ips: ipam_result.ips,
-        routes: ipam_result.routes,
-        dns: ipam_result.dns,
+        ips: Vec::new(),
+        routes: Vec::new(),
+        dns: Dns {
+            nameservers: Vec::new(),
+            domain: None,
+            search: Vec::new(),
+            options: Vec::new(),
+        },
         specific: HashMap::new(),
     })
 }

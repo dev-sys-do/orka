@@ -15,7 +15,7 @@ fn main() {
                 ..
             } => {
                 runtime.block_on(async move {
-                    let result = bridge::cmd_add(ifname, netns, config.clone()).await;
+                    let result: Result<SuccessReply, CniError> = bridge::cmd_add(ifname, netns, config.clone()).await;
                     into_reply(result, &config).await;
                 });
             }
@@ -26,13 +26,13 @@ fn main() {
                 ..
             } => {
                 runtime.block_on(async move {
-                    let result = bridge::cmd_del(ifname, netns.unwrap(), config.clone()).await;
+                    let result: Result<SuccessReply, CniError> = bridge::cmd_del(ifname, netns.unwrap(), config.clone()).await;
                     into_reply(result, &config).await;
                 });
             }
             Cni::Check { config, .. } => {
                 runtime.block_on(async move {
-                    let result = bridge::cmd_check().await;
+                    let result: Result<SuccessReply, CniError> = bridge::cmd_check().await;
                     into_reply(result, &config).await;
                 });
             }
