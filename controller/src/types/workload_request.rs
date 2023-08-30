@@ -2,7 +2,10 @@ use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 use validator::{Validate, ValidationError};
 
-use crate::client::scheduler::{self, workload::{Type, Resources}};
+use crate::client::scheduler::{
+    self,
+    workload::{Resources, Type},
+};
 
 #[derive(Debug, Validate, Deserialize, Serialize, Clone)]
 pub struct WorkloadRequest {
