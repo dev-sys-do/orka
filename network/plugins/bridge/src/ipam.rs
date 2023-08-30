@@ -75,7 +75,7 @@ pub async fn configure_iface(ifname: String, res: IpamSuccessReply) -> Result<()
                 .map_err(CniError::from)?;
         } else {
             return Err(CniError::Generic(format!(
-                "Failed to convert IpAddr to Ipv4Addr for adding default route to ifname: {}",
+                "Failed to convert gateway (from host-local) IpAddr to Ipv4Addr for adding default route to {}",
                 ifname
             )));
         }

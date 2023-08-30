@@ -2,11 +2,11 @@ use super::{
     link::{Link, LinkAttrs},
     veth::Veth,
 };
-use crate::types::NetworkConfigReference::*;
+use crate::{netns, types::NetworkConfigReference::*};
 use async_trait::async_trait;
 use cni_plugin::{config::NetworkConfig, error::CniError, macaddr::MacAddr, reply::Interface};
 use futures::stream::TryStreamExt;
-use rtnetlink::{Handle, NetworkNamespace};
+use rtnetlink::Handle;
 use std::path::PathBuf;
 
 #[derive(Clone)]
@@ -34,7 +34,7 @@ impl Link for Bridge {
                 .await
                 .map_err(|err| {
                     CniError::Generic(format!(
-                        "[ORKANET ERROR]: Could not add bridge {}. (fn link_add)\n{}\n",
+                        "Could not add link {} type bridge. (fn link_add)\n{}\n",
                         self.linkattrs.name, err
                     ))
                 }),
@@ -148,27 +148,25 @@ impl Bridge {
         let (connection_host, handle_host, _) = rtnetlink::new_connection().unwrap();
         tokio::spawn(connection_host);
 
-        // WARNING ! [Change namespace from host to container]
-        NetworkNamespace::unshare_processing(String::from(netns.to_string_lossy())).map_err(|err| CniError::Generic(format!(
-                "[ORKANET ERROR]: Could not unshare processing to netns {:?}. (fn setup_veth)\n{}\n",
-                netns, err
-            )))?;
+        let handle_host_for_cont: Handle = handle_host.clone();
+        let (host_veth_name, cont_veth) =
+            netns::exec::<_, _, (String, Veth)>(netns.clone(), |host_ns_fd| async move {
+                // Handle for container namespace
+                let (connection_cont, handle_cont, _) = rtnetlink::new_connection().unwrap();
+                tokio::spawn(connection_cont);
 
-        // Handle for container namespace
-        let (connection_cont, handle_cont, _) = rtnetlink::new_connection().unwrap();
-        tokio::spawn(connection_cont);
-
-        // create the veth pair in the container
-        let host_ns: PathBuf = PathBuf::from("/proc/1/ns/net");
-        let (host_veth_name, cont_veth) = Veth::setup_veth(
-            &handle_host,
-            &handle_cont,
-            ifname,
-            mtu,
-            mac,
-            host_ns.clone(),
-        )
-        .await?;
+                // create the veth pair in the container
+                Veth::setup_veth(
+                    &handle_host_for_cont,
+                    &handle_cont,
+                    ifname,
+                    mtu,
+                    mac,
+                    host_ns_fd,
+                )
+                .await
+            })
+            .await?;
 
         // connect host veth end to the bridge
         Self::link_set_master(
@@ -190,7 +188,7 @@ impl Bridge {
         let host_iface = Interface {
             name: host_veth_name,
             mac: Option::None,
-            sandbox: host_ns,
+            sandbox: PathBuf::from(format!("/proc/self/fd/{}", cont_veth.peer_namespace)),
         };
 
         Ok((host_iface, cont_iface))

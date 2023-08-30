@@ -4,16 +4,13 @@ use async_trait::async_trait;
 use cni_plugin::error::CniError;
 use cni_plugin::macaddr::MacAddr;
 use futures::stream::TryStreamExt;
-use nix::fcntl::{open, OFlag};
-use nix::sys::stat::Mode;
 use rtnetlink::Handle;
-use std::path::PathBuf;
 
 #[derive(Clone)]
 pub struct Veth {
     pub linkattrs: LinkAttrs,
     pub peer_name: String,
-    peer_namespace: PathBuf,
+    pub peer_namespace: i32,
 }
 
 #[async_trait]
@@ -25,24 +22,12 @@ impl Link for Veth {
             .veth(self.linkattrs.name.clone(), self.peer_name.clone())
             .execute()
             .await
-            .map_err(|err| {
+            .map_err(|e| {
                 CniError::Generic(format!(
-                    "[ORKANET]: Failed to make veth pair: {} and {}. (fn link_add)\n{}\n",
-                    self.linkattrs.name, self.peer_name, err
+                    "Failed to add veth pair: {} and {} (peer). (fn link_add) {}",
+                    self.linkattrs.name, self.peer_name, e
                 ))
             })?;
-
-        let fd = open(
-            self.peer_namespace.as_path(),
-            OFlag::O_RDONLY,
-            Mode::empty(),
-        )
-        .map_err(|err| {
-            CniError::Generic(format!(
-                "[ORKANET]: Failed to convert peer namespace to RawFd: {:?}. (fn link_add)\n{}\n",
-                self.peer_namespace, err
-            ))
-        })?;
 
         let mut links = handle
             .link()
@@ -53,17 +38,17 @@ impl Link for Veth {
             Ok(Some(link)) => handle
                 .link()
                 .set(link.header.index)
-                .setns_by_fd(fd)
+                .setns_by_fd(self.peer_namespace)
                 .execute()
                 .await
-                .map_err(|err| {
+                .map_err(|e| {
                     CniError::Generic(format!(
-                        "[ORKANET ERROR]: Failed to set veth peer in host ns: {}. (fn link_add)\n{}\n",
-                        self.peer_name, err
+                        "Failed to set {} (veth peer) in host namespace. (fn link_add) {}",
+                        self.peer_name, e
                     ))
                 }),
             _ => Err(CniError::Generic(format!(
-                "[ORKANET]: Failed to set veth peer in host ns: {}. (fn link_add)\n",
+                "Failed to set {} (veth peer) in host namespace. (fn link_add)",
                 self.peer_name
             ))),
         }
@@ -81,7 +66,7 @@ impl Veth {
         cont_veth_name: String,
         mtu: i64,
         cont_veth_mac: Option<MacAddr>,
-        host_ns: PathBuf,
+        host_ns_fd: i32,
     ) -> Result<(String, Self), CniError> {
         Self::setup_veth_with_name(
             handle_host,
@@ -90,7 +75,7 @@ impl Veth {
             String::new(),
             mtu,
             cont_veth_mac,
-            host_ns,
+            host_ns_fd,
         )
         .await
     }
@@ -102,7 +87,7 @@ impl Veth {
         host_veth_name: String,
         mtu: i64,
         cont_veth_mac: Option<MacAddr>,
-        host_ns: PathBuf,
+        host_ns_fd: i32,
     ) -> Result<(String, Self), CniError> {
         let (host_veth_name, cont_veth) = Self::make_veth(
             handle_cont,
@@ -110,7 +95,7 @@ impl Veth {
             host_veth_name,
             mtu,
             cont_veth_mac,
-            host_ns.clone(),
+            host_ns_fd,
         )
         .await?;
 
@@ -125,16 +110,22 @@ impl Veth {
         veth_peer_name: String,
         mtu: i64,
         mac: Option<MacAddr>,
-        host_ns: PathBuf,
+        host_ns_fd: i32,
     ) -> Result<(String, Self), CniError> {
         let peer_name: String = if veth_peer_name.is_empty() {
             utils::random_veth_name()
         } else {
             veth_peer_name
         };
-        let veth: Veth =
-            Self::make_veth_pair(handle, name.clone(), peer_name.clone(), mtu, mac, host_ns)
-                .await?;
+        let veth: Veth = Self::make_veth_pair(
+            handle,
+            name.clone(),
+            peer_name.clone(),
+            mtu,
+            mac,
+            host_ns_fd,
+        )
+        .await?;
 
         Ok((peer_name, veth))
     }
@@ -145,7 +136,7 @@ impl Veth {
         peer: String,
         mtu: i64,
         mac: Option<MacAddr>,
-        host_ns: PathBuf,
+        host_ns_fd: i32,
     ) -> Result<Self, CniError> {
         let mut veth: Self = Veth {
             linkattrs: LinkAttrs {
@@ -155,7 +146,7 @@ impl Veth {
                 hardware_addr: Option::None,
             },
             peer_name: peer,
-            peer_namespace: host_ns,
+            peer_namespace: host_ns_fd,
         };
 
         // MAC addr is set but not set...

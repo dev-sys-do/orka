@@ -1,6 +1,7 @@
 pub mod delegation;
 pub mod ipam;
 pub mod links;
+pub mod netns;
 pub mod route;
 pub mod types;
 
@@ -47,7 +48,8 @@ pub async fn cmd_add(
 
     if hairpin_mode && promisc_mode {
         return Err(CniError::Generic(
-            "[ORKANET ERROR]: Cannot set hairpin mode and promiscuous mode at the same time. (fn cmd_add)\n".to_string()
+            "Cannot set hairpin mode and promiscuous mode at the same time. (fn cmd_add)"
+                .to_string(),
         ));
     }
 
@@ -69,7 +71,7 @@ pub async fn cmd_add(
         .or_insert(json!(false));
 
     let (host_interface, container_interface) =
-        br.setup_veth(netns, ifname, config.clone()).await?;
+        br.setup_veth(netns.clone(), ifname, config.clone()).await?;
 
     let ipam_result: IpamSuccessReply = ipam::exec_cmd(Command::Add, config.clone())
         .await
@@ -77,12 +79,15 @@ pub async fn cmd_add(
 
     if ipam_result.ips.is_empty() {
         return Err(CniError::Generic(
-            "IPAM plugin returned missing IP config".to_string(),
+            "IPAM plugin returned missing IP config.".to_string(),
         ));
     }
 
     // Configure the container IP address(es)
-    let _ = ipam::configure_iface(container_interface.name.clone(), ipam_result.clone()).await;
+    netns::exec::<_, _, ()>(netns, |_| async {
+        ipam::configure_iface(container_interface.name.clone(), ipam_result.clone()).await
+    })
+    .await?;
 
     let is_gw: bool = config
         .specific
@@ -110,7 +115,7 @@ pub async fn cmd_check(
     _netns: PathBuf,
     _path: Vec<PathBuf>,
     _config: NetworkConfig,
-) -> Result<(), CniError> {
+) -> Result<SuccessReply, CniError> {
     todo!();
 }
 
@@ -120,6 +125,6 @@ pub async fn cmd_del(
     _netns: Option<PathBuf>,
     _path: Vec<PathBuf>,
     _config: NetworkConfig,
-) -> Result<(), CniError> {
+) -> Result<SuccessReply, CniError> {
     todo!();
 }
