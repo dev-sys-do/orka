@@ -61,11 +61,14 @@ where
 
             if status.success() {
                 if sub_plugin == "host-local" && command.as_ref() == "DEL" {
-                    let res: String = format!("
+                    let res: String = format!(
+                        "
                     {{
                         \"cniVersion\": \"{}\",
                         \"dns\": {{}}
-                    }}", config.cni_version);
+                    }}",
+                        config.cni_version
+                    );
                     Ok(
                         serde_json::from_str(&res).map_err(|err| CniError::Delegated {
                             plugin: sub_plugin.into(),

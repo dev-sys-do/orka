@@ -1,4 +1,3 @@
-use cni_plugin::error::CniError;
 use digest::Digest;
 use rand::distributions::Alphanumeric;
 use rand::rngs::SmallRng;
@@ -24,13 +23,10 @@ pub fn random_veth_name() -> String {
     format!("veth-{}", &hash_prefix[..8])
 }
 
-pub fn convert_to_ip(vec: Vec<u8>) -> Result<IpAddr, CniError> {
+pub fn convert_to_ip(vec: Vec<u8>) -> Option<IpAddr> {
     if vec.len() == 4 {
-        Ok(IpAddr::V4(Ipv4Addr::new(vec[0], vec[1], vec[2], vec[3])))
+        Some(IpAddr::V4(Ipv4Addr::new(vec[0], vec[1], vec[2], vec[3])))
     } else {
-        Err(CniError::Generic(format!(
-            "Failed to convert Vec<u8> to IpAddr: {:?}",
-            vec
-        )))
+        None
     }
 }

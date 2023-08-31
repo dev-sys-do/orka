@@ -6,8 +6,9 @@ use crate::{netns, types::NetworkConfigReference::*};
 use async_trait::async_trait;
 use cni_plugin::{config::NetworkConfig, error::CniError, macaddr::MacAddr, reply::Interface};
 use futures::stream::TryStreamExt;
+use log::info;
 use rtnetlink::Handle;
-use std::path::PathBuf;
+use std::{net::IpAddr, path::PathBuf};
 
 #[derive(Clone)]
 pub struct Bridge {
@@ -176,7 +177,55 @@ impl Bridge {
         Ok((host_iface, cont_iface))
     }
 
-    // async fn ensure_addr(gw_addr: IpAddr) -> Result<(), CniError> {
+    pub async fn ensure_addr(
+        name: String,
+        gw_addr: IpAddr,
+        prefix_len: u8,
+        gw_is_ipv4: bool,
+        force_address: bool,
+    ) -> Result<(), CniError> {
+        let (connection, handle, _) = rtnetlink::new_connection().unwrap();
+        tokio::spawn(connection);
 
-    // }
+        if let Some(current_addr) =
+            Self::link_get_addr(&handle, name.clone())
+                .await
+                .map_err(|_| {
+                    CniError::Generic(format!(
+                        "Failed to get current IP address for {}. (fn ensure_addr)",
+                        name
+                    ))
+                })?
+        {
+            info!("CURRENT IP: {}", current_addr);
+
+            if current_addr == gw_addr {
+                return Ok(());
+            }
+
+            // Multiple IPv6 addresses are allowed on the bridge if the
+            // corresponding subnets do not overlap. For IPv4 or for
+            // overlapping IPv6 subnets, reconfigure the IP address if
+            // forceAddress is true, otherwise throw an error.
+            if current_addr.is_ipv4() {
+                if force_address {
+                    Bridge::link_delete_addr(&handle, name.clone()).await?;
+                } else {
+                    return Err(CniError::Generic(format!(
+                        "{} already has an IP address different from {:?}",
+                        name, gw_addr
+                    )));
+                }
+            }
+        }
+
+        if gw_is_ipv4 {
+            Bridge::link_addr_add(&handle, name, gw_addr, prefix_len).await
+        } else {
+            Err(CniError::Generic(format!(
+                "Gateway address is not ipv4 : {}. (fn ensure_addr)",
+                gw_addr
+            )))
+        }
+    }
 }

@@ -13,6 +13,7 @@ use cni_plugin::{
     Command,
 };
 use links::{bridge::Bridge, link::Link, veth::Veth};
+use log::info;
 use serde_json::json;
 use std::{collections::HashMap, net::IpAddr, path::PathBuf};
 
@@ -60,6 +61,10 @@ pub async fn cmd_add(
         .specific
         .entry(PreserveDefaultVlan.to_string())
         .or_insert(json!(false));
+    config
+        .specific
+        .entry(ForceAddress.to_string())
+        .or_insert(json!(false));
 
     // Create bridge only if missing
     let (br, br_interface): (Bridge, Interface) = Bridge::setup_bridge(config.clone()).await?;
@@ -75,6 +80,7 @@ pub async fn cmd_add(
 
     // Delegate to `host-local` plugin
     let ipam_result: SuccessReply = ipam::exec_cmd(Command::Add, config.clone()).await?;
+    info!("{:?}", ipam_result.ips[0].gateway);
 
     if ipam_result.ips.is_empty() {
         return Err(CniError::Generic(
@@ -93,9 +99,28 @@ pub async fn cmd_add(
         .get(&IsGateway.to_string())
         .and_then(|v| v.as_bool())
         .unwrap();
+    let force_address: bool = config
+        .specific
+        .get(&ForceAddress.to_string())
+        .and_then(|v| v.as_bool())
+        .unwrap();
 
     if is_gw {
-        // Bridge::ensure_addr().await?;
+        for ip in ipam_result.ips.clone() {
+            let prefix_len: u8 = ip.address.prefix();
+            if let Some(gw) = ip.gateway {
+                let gw_is_ipv4: bool = gw.is_ipv4();
+                Bridge::ensure_addr(
+                    br.linkattrs.name.clone(),
+                    gw,
+                    prefix_len,
+                    gw_is_ipv4,
+                    force_address,
+                )
+                .await?;
+                let _ = route::enable_ip_forward(gw_is_ipv4);
+            }
+        }
     }
 
     // Controle oper state is up
