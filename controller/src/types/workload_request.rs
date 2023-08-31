@@ -2,9 +2,8 @@ use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 use validator::{Validate, ValidationError};
 
-use crate::client::scheduler::{
-    self,
-    workload::{Resources, Type},
+use orka_proto::scheduler_controller::{
+    workload::{Resources, Type}, self,
 };
 
 #[derive(Debug, Validate, Deserialize, Serialize, Clone)]
@@ -59,10 +58,10 @@ fn validate_workload_registry(registry: &WorkloadRegistry) -> Result<(), Validat
     }
 }
 
-impl From<Workload> for scheduler::Workload {
-    fn from(workload: Workload) -> scheduler::Workload {
+impl From<Workload> for scheduler_controller::Workload {
+    fn from(workload: Workload) -> scheduler_controller::Workload {
         // Create a grpc workload object
-        scheduler::Workload {
+        scheduler_controller::Workload {
             instance_id: format!("instance-{}-{}", workload.name, Uuid::new_v4()),
             r#type: Type::Container.into(),
             image: workload.image,

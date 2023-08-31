@@ -1,7 +1,7 @@
 use serde::{Deserialize, Serialize};
 use validator::Validate;
 
-use crate::client::scheduler::{
+use orka_proto::scheduler_controller::{
     workload_status::{Resources, Status},
     WorkloadStatus,
 };

@@ -1,4 +1,4 @@
-use crate::client::scheduler::{SchedulingRequest, Workload, WorkloadInstance};
+use orka_proto::scheduler_controller::{SchedulingRequest, Workload, WorkloadInstance};
 use crate::client::Client;
 use crate::errors::ApiError;
 use crate::store::kv_manager::{KeyValueStore, DB_BATCH};

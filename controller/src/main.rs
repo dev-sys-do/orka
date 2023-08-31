@@ -4,17 +4,16 @@ mod routes;
 mod store;
 mod types;
 
-use crate::client::scheduler;
 
-use client::scheduler::WorkloadInstance;
+use orka_proto::scheduler_controller::{WorkloadInstance, self};
 use store::kv_manager::{KeyValueBatch, KeyValueStore, DB_BATCH};
 use tokio::sync::mpsc;
 use tokio_stream::wrappers::ReceiverStream;
-use tonic::{transport::Server, Request, Response, Status};
+use tonic::{Request, Response, Status};
 
 use axum::Router;
-use scheduler::scheduling_service_server::{SchedulingService, SchedulingServiceServer};
-use scheduler::{workload_status::Status as DeploymentStatus, SchedulingRequest, WorkloadStatus};
+use orka_proto::scheduler_controller::scheduling_service_server::{SchedulingService};
+use orka_proto::scheduler_controller::{workload_status::Status as DeploymentStatus, SchedulingRequest, WorkloadStatus};
 use std::net::SocketAddr;
 use std::thread;
 use std::time::Duration;
@@ -37,17 +36,17 @@ impl SchedulingService for Scheduler {
     async fn stop(
         &self,
         request: Request<WorkloadInstance>,
-    ) -> Result<Response<scheduler::Empty>, Status> {
+    ) -> Result<Response<scheduler_controller::Empty>, Status> {
         info!("{:?}", request);
-        Ok(Response::new(scheduler::Empty {}))
+        Ok(Response::new(scheduler_controller::Empty {}))
     }
 
     async fn destroy(
         &self,
         request: Request<WorkloadInstance>,
-    ) -> Result<Response<scheduler::Empty>, Status> {
+    ) -> Result<Response<scheduler_controller::Empty>, Status> {
         info!("{:?}", request);
-        Ok(Response::new(scheduler::Empty {}))
+        Ok(Response::new(scheduler_controller::Empty {}))
     }
 
     async fn schedule(
@@ -115,18 +114,18 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     pretty_env_logger::init();
 
     // Initialize grpc
-    let grpc_addr = "[::1]:50051".parse()?;
-    let scheduler = Scheduler::default();
+    // let grpc_addr = "[::1]:50051".parse()?;
+    // let scheduler = Scheduler::default();
 
-    // Spawn the gRPC server as a tokio task
-    let grpc_thread = task::spawn(async move {
-        info!("gRPC server running at: {}", grpc_addr);
-        Server::builder()
-            .add_service(SchedulingServiceServer::new(scheduler))
-            .serve(grpc_addr)
-            .await
-            .unwrap();
-    });
+    // // Spawn the gRPC server as a tokio task
+    // let grpc_thread = task::spawn(async move {
+    //     info!("gRPC server running at: {}", grpc_addr);
+    //     Server::builder()
+    //         .add_service(SchedulingServiceServer::new(scheduler))
+    //         .serve(grpc_addr)
+    //         .await
+    //         .unwrap();
+    // });
 
     // Initialize http
     let http_addr = SocketAddr::from(([127, 0, 0, 1], 3000));
@@ -182,7 +181,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     });
 
     // Wait for both servers and a db thread to finish
-    tokio::try_join!(grpc_thread, http_thread, db_thread)?;
+    tokio::try_join!(http_thread, db_thread)?;
 
     Ok(())
 }
