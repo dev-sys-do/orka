@@ -65,7 +65,7 @@ impl LifecycleService for AgentLifecycleSvc {
         // Prepare manager
         let mut manager = self.node_agent_manager.lock().map_err(|err| {
             event!(
-                Level::WARN,
+                Level::ERROR,
                 agent_id,
                 error = %err,
                 "Failed to acquire node manager, refusing registration for agent"
@@ -105,7 +105,7 @@ impl LifecycleService for AgentLifecycleSvc {
             }
             Err(err) => {
                 event!(
-                    Level::WARN,
+                    Level::ERROR,
                     agent_id,
                     error = %err,
                     "Failed to acquire node manager, could not remove agent"
