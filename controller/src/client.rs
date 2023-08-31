@@ -1,7 +1,7 @@
+use log::trace;
 use scheduler::scheduling_service_client::SchedulingServiceClient;
 use scheduler::SchedulingRequest;
 use tonic::transport::Channel;
-use log::trace;
 
 pub mod scheduler {
     tonic::include_proto!("orkascheduler");

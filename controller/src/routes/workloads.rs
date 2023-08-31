@@ -1,10 +1,8 @@
+use crate::client::scheduler::workload;
 use crate::types::workload_request::WorkloadRequest;
 use crate::{
     client::{
-        scheduler::{
-            workload::Type,
-            SchedulingRequest, Workload,
-        },
+        scheduler::{workload::Type, SchedulingRequest, Workload},
         Client,
     },
     errors::ApiError,
@@ -13,7 +11,6 @@ use axum::Json;
 use log::info;
 use serde_json::{self, json, Value};
 use validator::Validate;
-use crate::client::scheduler::workload;
 
 pub async fn get_workloads(_body: String) -> anyhow::Result<Json<Value>, ApiError> {
     tokio::spawn(async move {
