@@ -1,9 +1,11 @@
 //! Lifecycle gRPC service for the Orka node agents.
 
+use crate::managers::node_agent::errors::NodeAgentError;
 use crate::managers::node_agent::manager::NodeAgentManager;
 use orka_proto::scheduler_agent::{
     lifecycle_service_server::LifecycleService, ConnectionRequest, DisconnectionNotice, Empty,
 };
+use std::net::SocketAddr;
 use std::sync::{Arc, Mutex};
 use tonic::{Request, Response, Result, Status};
 use tracing::{event, Level};
@@ -34,11 +36,36 @@ impl LifecycleService for AgentLifecycleSvc {
         &self,
         request: Request<ConnectionRequest>,
     ) -> Result<Response<Empty>, Status> {
-        let agent_id = request.into_inner().id;
+        let remote_addr = request.remote_addr();
+        let inner = request.into_inner();
+        let agent_id = inner.id;
 
+        // Gather remote port and address for agent
+        let agent_port = u16::try_from(inner.port).map_err(|_| {
+            event!(
+                Level::ERROR,
+                agent_id,
+                provided_port = inner.port,
+                "Agent provided port outside valid range"
+            );
+
+            Status::from(NodeAgentError::NoRemoteAddress())
+        })?;
+
+        let remote_addr = remote_addr.ok_or_else(|| {
+            event!(
+                Level::ERROR,
+                agent_id,
+                "Could not retrieve remote address during agent registration. Agent would be unreachable, refusing registration"
+            );
+
+            Status::from(NodeAgentError::NoRemoteAddress())
+        })?;
+
+        // Prepare manager
         let mut manager = self.node_agent_manager.lock().map_err(|err| {
             event!(
-                Level::WARN,
+                Level::ERROR,
                 agent_id,
                 error = %err,
                 "Failed to acquire node manager, refusing registration for agent"
@@ -47,7 +74,10 @@ impl LifecycleService for AgentLifecycleSvc {
             Status::internal("Failed to register agent")
         })?;
 
-        match manager.add_agent(&agent_id) {
+        // Add agent
+        let agent_addr = SocketAddr::new(remote_addr.ip(), agent_port);
+
+        match manager.add_agent(agent_id.clone(), agent_addr) {
             Ok(_) => Ok(Response::new(Empty {})),
             Err(err) => {
                 event!(
@@ -75,7 +105,7 @@ impl LifecycleService for AgentLifecycleSvc {
             }
             Err(err) => {
                 event!(
-                    Level::WARN,
+                    Level::ERROR,
                     agent_id,
                     error = %err,
                     "Failed to acquire node manager, could not remove agent"

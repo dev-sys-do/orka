@@ -1,6 +1,7 @@
 //! Node agent and its metrics.
 
 use chrono::{DateTime, Local};
+use std::net::SocketAddr;
 
 /// The memory (RAM) information of the node the agent is installed on.
 #[derive(Debug, Clone)]
@@ -22,6 +23,10 @@ pub struct NodeCpu {
 /// The node agent and the information it broadcasts.
 #[derive(Debug, Clone)]
 pub struct NodeAgent {
+    /// The agent's unique id.
+    id: String,
+    /// Address the agent is reachable at.
+    address: SocketAddr,
     /// Heartbeat represents the last time the agent communicated with the scheduler.
     /// This is used to determine whether the agent has timed out.
     last_heartbeat: DateTime<Local>,
@@ -35,12 +40,30 @@ pub struct NodeAgent {
 
 impl NodeAgent {
     /// Create a new `NodeAgent`.
-    pub fn new() -> Self {
+    ///
+    /// # Arguments
+    ///
+    /// * `id` - The ID of the node agent.
+    /// * `address` - The address where the node agent is reachable at.
+    pub fn new(id: String, address: SocketAddr) -> Self {
         NodeAgent {
+            id,
+            address,
             last_heartbeat: Local::now(),
             memory: None,
             cpu: None,
         }
+    }
+
+    /// Get the agent's id.
+    pub fn id(&self) -> &str {
+        &self.id
+    }
+
+    /// Get the agent's formatted server address.
+    /// This is the URL that should be used to contact its gRPC server.
+    pub fn grpc_url(&self) -> String {
+        format!("http://{}", self.address)
     }
 
     /// Update the agent's last heartbeat.

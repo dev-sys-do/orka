@@ -4,6 +4,7 @@ use crate::managers::node_agent::metrics::{NodeAgent, NodeCpu, NodeMemory};
 use anyhow::Result;
 use std::collections::hash_map;
 use std::collections::HashMap;
+use std::net::SocketAddr;
 use tracing::{event, Level};
 
 use super::errors::NodeAgentError;
@@ -22,28 +23,48 @@ impl NodeAgentManager {
         }
     }
 
+    /// Get an iterator over all the registered agents.
+    pub fn agents_iter(&self) -> impl Iterator<Item = &NodeAgent> {
+        self.agents.values()
+    }
+
+    /// Get a registered agent.
+    ///
+    /// # Arguments
+    ///
+    /// * `agent_id` - The ID of the agent to return.
+    pub fn get_agent(&self, agent_id: &str) -> Option<&NodeAgent> {
+        self.agents.get(agent_id)
+    }
+
     /// Add a new agent to the managed list to keep track of it.
     ///
     /// # Arguments
     ///
     /// * `id` - The ID of the agent to add.
+    /// * `addr` - The address the agent is reachable at.
     ///
     /// # Errors
     ///
     /// * An agent with the same ID is already in the cluster.
-    pub fn add_agent(&mut self, id: &str) -> Result<&NodeAgent, NodeAgentError> {
-        if let hash_map::Entry::Vacant(e) = self.agents.entry(id.to_string()) {
+    pub fn add_agent(
+        &mut self,
+        id: String,
+        addr: SocketAddr,
+    ) -> Result<&NodeAgent, NodeAgentError> {
+        if let hash_map::Entry::Vacant(e) = self.agents.entry(id.clone()) {
             // No other agent has this ID
             event!(
                 Level::INFO,
                 agent_id = e.key(),
+                address = %addr,
                 "Adding new agent to the cluster"
             );
 
-            Ok(e.insert(NodeAgent::new()))
+            Ok(e.insert(NodeAgent::new(id, addr)))
         } else {
             // Reject agent as the ID is already registered
-            Err(NodeAgentError::AlreadyExists(id.to_string()))
+            Err(NodeAgentError::AlreadyExists(id))
         }
     }
 

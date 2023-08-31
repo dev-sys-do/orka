@@ -4,6 +4,7 @@ use std::net::SocketAddr;
 use std::sync::{Arc, Mutex};
 
 use crate::managers::node_agent::manager::NodeAgentManager;
+use crate::managers::workload::manager::WorkloadManager;
 use anyhow::{Context, Result};
 use orka_proto::{
     scheduler_agent::{
@@ -89,6 +90,7 @@ impl GrpcServer {
 
         // Create the shared node agent manager
         let node_agent_manager = Arc::new(Mutex::new(NodeAgentManager::new()));
+        let workload_manager = Arc::new(Mutex::new(WorkloadManager::new()));
 
         // Configure the router
         let router = server_builder
@@ -98,7 +100,10 @@ impl GrpcServer {
             .add_service(StatusUpdateServiceServer::new(AgentStatusUpdateSvc::new(
                 Arc::clone(&node_agent_manager),
             )))
-            .add_service(SchedulingServiceServer::new(ControllerSchedulingSvc::new()));
+            .add_service(SchedulingServiceServer::new(ControllerSchedulingSvc::new(
+                Arc::clone(&node_agent_manager),
+                Arc::clone(&workload_manager),
+            )));
 
         event!(Level::DEBUG, "The gRPC server was configured successfully");
 

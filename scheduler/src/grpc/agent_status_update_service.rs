@@ -56,7 +56,7 @@ impl StatusUpdateService for AgentStatusUpdateSvc {
 
                         if let Err(err) = res {
                             event!(
-                                Level::WARN,
+                                Level::ERROR,
                                 agent_id = status.id,
                                 error = %err,
                                 "Unable to process node status update"
@@ -67,7 +67,7 @@ impl StatusUpdateService for AgentStatusUpdateSvc {
                     }
                     Err(err) => {
                         event!(
-                            Level::WARN,
+                            Level::ERROR,
                             agent_id = status.id,
                             error = %err,
                             "Failed to acquire node manager, cannot process node status update for agent"
@@ -78,7 +78,7 @@ impl StatusUpdateService for AgentStatusUpdateSvc {
                 },
                 Err(err) => {
                     event!(
-                        Level::WARN,
+                        Level::ERROR,
                         error = %err,
                         "An error was received while processing a node status update stream"
                     );
