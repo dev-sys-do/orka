@@ -3,7 +3,8 @@ use uuid::Uuid;
 use validator::{Validate, ValidationError};
 
 use orka_proto::scheduler_controller::{
-    workload::{Resources, Type}, self,
+    self,
+    workload::{Resources, Type},
 };
 
 #[derive(Debug, Validate, Deserialize, Serialize, Clone)]

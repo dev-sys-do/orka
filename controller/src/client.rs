@@ -1,5 +1,5 @@
-use orka_proto::scheduler_controller::{scheduling_service_client::SchedulingServiceClient, self};
 use orka_proto::scheduler_controller::SchedulingRequest;
+use orka_proto::scheduler_controller::{self, scheduling_service_client::SchedulingServiceClient};
 use tonic::transport::Channel;
 use tonic::Streaming;
 

@@ -19,11 +19,7 @@ impl From<&WorkloadStatus> for InstanceStatus {
         InstanceStatus {
             name: (*status.instance_id).to_string(),
             status_code: InstanceStatusCode::from(status.status.clone()),
-            resource_usage: InstanceResources {
-                cpu: 1,
-                memory: 1,
-                disk: 1,
-            },
+            resource_usage: InstanceResources::from(status.resource_usage.clone()),
         }
     }
 }
@@ -37,12 +33,19 @@ pub struct InstanceResources {
     pub disk: i32,
 }
 
-impl From<Resources> for InstanceResources {
-    fn from(res: Resources) -> Self {
-        InstanceResources {
-            cpu: res.cpu,
-            memory: res.memory,
-            disk: res.disk,
+impl From<Option<Resources>> for InstanceResources {
+    fn from(resources: Option<Resources>) -> Self {
+        match resources {
+            Some(res) => InstanceResources {
+                cpu: res.cpu,
+                memory: res.memory,
+                disk: res.disk,
+            },
+            None => InstanceResources {
+                cpu: 0,
+                memory: 0,
+                disk: 0,
+            },
         }
     }
 }
