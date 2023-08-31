@@ -4,16 +4,19 @@ mod routes;
 mod store;
 mod types;
 
-
-use orka_proto::scheduler_controller::{WorkloadInstance, self};
-use store::kv_manager::{KeyValueBatch, KeyValueStore, DB_BATCH};
+use orka_proto::scheduler_controller::{self, WorkloadInstance};
+use store::kv_manager::DB_STORE;
+use store::kv_manager::{KeyValueBatch, DB_BATCH};
 use tokio::sync::mpsc;
 use tokio_stream::wrappers::ReceiverStream;
 use tonic::{Request, Response, Status};
 
 use axum::Router;
-use orka_proto::scheduler_controller::scheduling_service_server::{SchedulingService};
-use orka_proto::scheduler_controller::{workload_status::Status as DeploymentStatus, SchedulingRequest, WorkloadStatus};
+use orka_proto::scheduler_controller::scheduling_service_server::SchedulingService;
+use orka_proto::scheduler_controller::workload_status::Resources;
+use orka_proto::scheduler_controller::{
+    workload_status::Status as DeploymentStatus, SchedulingRequest, WorkloadStatus,
+};
 use std::net::SocketAddr;
 use std::thread;
 use std::time::Duration;
@@ -67,7 +70,11 @@ impl SchedulingService for Scheduler {
                         code: 0,
                         message: Some("The workload is waiting".to_string()),
                     }),
-                    ..Default::default()
+                    resource_usage: Some(Resources {
+                        cpu: 2,
+                        memory: 3,
+                        disk: 4,
+                    }),
                 },
                 WorkloadStatus {
                     instance_id: workload.instance_id.clone(),
@@ -75,7 +82,11 @@ impl SchedulingService for Scheduler {
                         code: 1,
                         message: Some("The workload is running".to_string()),
                     }),
-                    ..Default::default()
+                    resource_usage: Some(Resources {
+                        cpu: 2,
+                        memory: 3,
+                        disk: 4,
+                    }),
                 },
                 WorkloadStatus {
                     instance_id: workload.instance_id,
@@ -83,7 +94,11 @@ impl SchedulingService for Scheduler {
                         code: 2,
                         message: Some("The workload is terminated".to_string()),
                     }),
-                    ..Default::default()
+                    resource_usage: Some(Resources {
+                        cpu: 2,
+                        memory: 3,
+                        disk: 4,
+                    }),
                 },
             ];
 
@@ -159,7 +174,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         loop {
             thread::sleep(Duration::from_secs(5));
             let kv_batch = DB_BATCH.lock();
-            let kv_store = KeyValueStore::new();
+            let kv_store = DB_STORE.lock();
             match kv_batch {
                 Ok(mut kvbatch) => {
                     match kv_store {

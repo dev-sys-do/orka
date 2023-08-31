@@ -20,6 +20,9 @@ pub enum ApiError {
 
     #[error("Scheduling error")]
     SchedulingError(#[from] tonic::Status),
+
+    #[error("Instance not created")]
+    InstanceNotCreated { message: String },
 }
 
 impl IntoResponse for ApiError {
@@ -32,6 +35,7 @@ impl IntoResponse for ApiError {
             ApiError::SerializationError(e) => (StatusCode::BAD_REQUEST, e.to_string()),
             ApiError::DatabaseError(e) => (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()),
             ApiError::SchedulingError(e) => (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()),
+            ApiError::InstanceNotCreated { message } => (StatusCode::BAD_REQUEST, message),
         };
 
         let payload = json!({

@@ -10,7 +10,7 @@ use validator::Validate;
 
 pub async fn get_workloads(_body: String) -> anyhow::Result<Json<Value>, ApiError> {
     // Init the database
-    let kv_store = KeyValueStore::new()?;
+    let kv_store = DB_STORE.lock().unwrap();
 
     let workloads = kv_store.select_workloads()?;
 
@@ -20,7 +20,7 @@ pub async fn get_workloads(_body: String) -> anyhow::Result<Json<Value>, ApiErro
 pub async fn get_specific_workload(
     Path(id): Path<String>,
 ) -> anyhow::Result<Json<Value>, ApiError> {
-    let kv_store = KeyValueStore::new()?;
+    let kv_store = DB_STORE.lock().unwrap();
 
     let workload = kv_store.workloads_bucket()?.get(&id)?;
 
@@ -33,14 +33,14 @@ pub async fn get_specific_workload(
 }
 
 pub async fn delete_workload(Path(id): Path<String>) -> anyhow::Result<Json<Value>, ApiError> {
-    let kv_store = KeyValueStore::new()?;
+    let kv_store = DB_STORE.lock().unwrap();
     kv_store.workloads_bucket()?.remove(&id)?;
     Ok(Json(json!({"description": "Workload deleted"})))
 }
 
 pub async fn post_workload(body: String) -> anyhow::Result<Json<Value>, ApiError> {
     // Init the database
-    let kv_store = KeyValueStore::new()?;
+    let kv_store = DB_STORE.lock().unwrap();
 
     // Create a new Workload Request object out of the body
     let json_body: WorkloadRequest = serde_json::from_str(&body)?;
