@@ -9,3 +9,5 @@ pub mod scheduler_agent {
 pub mod scheduler_controller {
     tonic::include_proto!("scheduler.controller");
 }
+
+pub mod scheduler;
