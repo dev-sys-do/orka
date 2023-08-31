@@ -1,13 +1,9 @@
-use scheduler::scheduling_service_client::SchedulingServiceClient;
-use scheduler::SchedulingRequest;
+use orka_proto::scheduler_controller::{scheduling_service_client::SchedulingServiceClient, self};
+use orka_proto::scheduler_controller::SchedulingRequest;
 use tonic::transport::Channel;
 use tonic::Streaming;
 
-use self::scheduler::{WorkloadInstance, WorkloadStatus};
-
-pub mod scheduler {
-    tonic::include_proto!("scheduler.controller");
-}
+use orka_proto::scheduler_controller::{WorkloadInstance, WorkloadStatus};
 
 pub struct Client {
     client: SchedulingServiceClient<Channel>,
@@ -33,7 +29,7 @@ impl Client {
     pub async fn stop_instance(
         &mut self,
         instance: WorkloadInstance,
-    ) -> Result<scheduler::Empty, tonic::Status> {
+    ) -> Result<scheduler_controller::Empty, tonic::Status> {
         let response = self.client.stop(instance).await?;
 
         Ok(response.into_inner())
@@ -42,7 +38,7 @@ impl Client {
     pub async fn destroy_instance(
         &mut self,
         instance: WorkloadInstance,
-    ) -> Result<scheduler::Empty, tonic::Status> {
+    ) -> Result<scheduler_controller::Empty, tonic::Status> {
         let response = self.client.destroy(instance).await?;
 
         Ok(response.into_inner())
