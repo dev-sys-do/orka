@@ -12,4 +12,10 @@ pub enum NodeAgentError {
     /// The node agent is already registered.
     #[error("Agent already exists: `{0}`")]
     AlreadyExists(String),
+
+    #[error("Agent has no remote address")]
+    NoRemoteAddress(),
+
+    #[error("Agent provided port outside boundaries")]
+    InvalidPort(),
 }
