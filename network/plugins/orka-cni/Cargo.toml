@@ -1,0 +1,12 @@
+[package]
+name = "orka-cni"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+cni-plugin = { version = "0.2", features = ["with-tokio"] }
+tokio = { version = "1.32", features = ["full"] }
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+log = "0.4"
+which = "4.4.0"
