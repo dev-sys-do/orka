@@ -2,6 +2,7 @@ name: CI Controller
 
 on:
   push:
+  pull_request:
     paths:
       - "controller/**"
 

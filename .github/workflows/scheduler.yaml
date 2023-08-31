@@ -2,11 +2,12 @@ name: CI Scheduler
 
 on:
   push:
+  pull_request:
     paths:
-      - 'scheduler/**'
-      
+      - "scheduler/**"
+
 jobs:
   rustci:
-    uses: './.github/workflows/rust-ci.yaml'
+    uses: "./.github/workflows/rust-ci.yaml"
     with:
-      directory: 'scheduler'
+      directory: "scheduler"
