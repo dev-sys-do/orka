@@ -46,7 +46,7 @@ flowchart LR
 
 - Ressource limitation  
 - Multi tenant
-- Scalabilty
+- Scalability
 - High Availability
 - Upgradable
 - Monitoring
@@ -67,6 +67,7 @@ As a CLI, our component interface will communicate to the ClusterAPI using the H
 - `GET /instance/:id` returns instances of id `:id`
 - `POST /instance` creates a new instance
 - `DELETE /instance/:id` deletes an existing instance of id `:id`
+- `DELETE /instance/:id/force` forcefully deletes an existing instance of id `:id`
 
 ## CLI
 
@@ -87,7 +88,7 @@ As a CLI, our component interface will communicate to the ClusterAPI using the H
 
 *Instance commands:*
 - `orkactl create instance <workload-id>`
-- `orkactl delete instance <instance-id>`
+- `orkactl delete instance <instance-id> [--force]`
 - `orkactl get instance [--id <instance-id>]`
 
 
@@ -102,13 +103,13 @@ version: 1                     # Default to last supported version
 workload:
     kind: container            # "container", "bare-metal" 
     name: postgres             
-    networks:
+    network:
         - "network_name_1"
         - "mfa_network"
     environment:
-        - key: value
-        - key2: value2
-        - keyX: valueX
+        - key=value
+        - key2=value2
+        - keyX=valueX
 
     registry: ghcr | dockerhub # Default to dockerhub, optional
     image: postgres:15
@@ -161,9 +162,10 @@ Any command option passed through `orkactl` overrides the corresponding configur
 
 The following `orkactl` properties can be set though the configuration file:
 
-| Property Key             | Description | Optional | Default Value |
-|--------------------------|-------------|----------|---------------|
-| `apiUrl`                 | The URL to the Cluster API instance | Yes | `http://localhost` |
+| Property Key | Description                         | Optional | Default Value      |
+|--------------|-------------------------------------|----------|--------------------|
+| `apiUrl`     | The URL to the Cluster API instance | Yes      | `http://localhost` |
+| `apiPort`    | The port to the Cluster API instance| Yes      | `3000`             |
 
 
 ### Configuration File reference
@@ -171,4 +173,5 @@ The following `orkactl` properties can be set though the configuration file:
 The configuration file is stored as a structured yaml:
 ```yaml
 apiUrl: "string"
+apiPort: number
 ```
