@@ -17,7 +17,10 @@ fn main() {
         Cni::Add { container_id, ifname, netns, path, config } => {
             let cni_version = config::get_cni_version_from_config(&config);
 
-            let subnet: IpNet = config::get_subnet_from_config(&cni_version.clone(), &config);
+            let subnet_opt: Option<IpNet> = config::get_subnet_from_config(&cni_version.clone(), &config);
+            if let None = subnet_opt {
+                return;
+            }
             let get_result = config::get_datadir_from_config(&cni_version.clone(), &config);
             if let Err(()) = get_result {
                 return;
@@ -29,7 +32,7 @@ fn main() {
                 ifname: ifname,
                 netns: netns.to_str().unwrap().to_string(),
                 data_dir: data_dir,
-                subnet: subnet,
+                subnet: subnet_opt.unwrap(),
                 cni_version: cni_version
             };
             
@@ -41,7 +44,7 @@ fn main() {
         Cni::Del { container_id, ifname, netns, path, config } => {
             let cni_version = config::get_cni_version_from_config(&config);
 
-            let subnet: IpNet = config::get_subnet_from_config(&cni_version.clone(), &config);
+            let subnet_opt: Option<IpNet> = config::get_subnet_from_config(&cni_version.clone(), &config);
             let get_result = config::get_datadir_from_config(&cni_version.clone(), &config);
             if let Err(()) = get_result {
                 return;
@@ -58,7 +61,7 @@ fn main() {
                 ifname: ifname,
                 netns: netns_value,
                 data_dir: data_dir,
-                subnet: subnet,
+                subnet: subnet_opt.unwrap(),
                 cni_version: cni_version
             };
 
@@ -70,7 +73,11 @@ fn main() {
         Cni::Check { container_id, ifname, netns, path, config } => {
             let cni_version = config::get_cni_version_from_config(&config);
 
-            let subnet: IpNet = config::get_subnet_from_config(&cni_version.clone(), &config);
+            let subnet_opt: Option<IpNet> = config::get_subnet_from_config(&cni_version.clone(), &config);
+            if let None = subnet_opt {
+                return;
+            }
+
             let get_result = config::get_datadir_from_config(&cni_version.clone(), &config);
             if let Err(()) = get_result {
                 return;
@@ -82,7 +89,7 @@ fn main() {
                 ifname: ifname,
                 netns: netns.to_str().unwrap().to_string(),
                 data_dir: data_dir,
-                subnet: subnet,
+                subnet: subnet_opt.unwrap(),
                 cni_version: cni_version
             };
 

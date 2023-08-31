@@ -33,26 +33,100 @@ pub fn get_datadir_from_config(cni_version: &String, config: &NetworkConfig) -> 
     return Ok(data_dir);
 }
 
-// To change this
-pub fn get_subnet_from_config(cni_version: &String, config: &NetworkConfig) -> IpNet {
-    let range_value = config.specific
-        .get("ranges")
-        .expect("Cannot get ranges field from config file")
-        .as_array()
-        .expect("Invalid ranges field in config file")
-        .first()
-        .expect("Cannot get first array of subnet in config file")
-        .as_array()
-        .expect("Invalid array of subnet in config file")
-        .first()
-        .expect("Invalid string provided as a subnet in config file")
-        .get("subnet")
-        .expect("Cannot get subnet in subnet object in config file")
-        .as_str()
-        .expect("Invalid subnet value provided in config file");
-    let subnet: String = range_value.to_string();
-    let net = IpNet::from_str(&subnet).expect("Invalid subnet format provided in config file");
-    return net;
+
+pub fn get_subnet_from_config(cni_version: &String, config: &NetworkConfig) -> Option<IpNet> {
+
+    let ranges_value = config.specific.get("ranges");
+
+    if ranges_value.is_none() {
+        cni_error::output_error(
+            &"Cannot get ranges field from config file".to_string(),
+            &"".to_string(),
+            cni_error::CNIErrorCode::InvalidNetworkConfig,
+            cni_version
+        );
+        return None;
+    }
+
+    let ranges_array = ranges_value.unwrap().as_array();
+    if ranges_array.is_none() {
+        cni_error::output_error(
+            &"Invalid ranges field in config file".to_string(),
+            &"".to_string(),
+            cni_error::CNIErrorCode::InvalidNetworkConfig,
+            cni_version
+        );
+        return None;
+    }
+
+    let subnet_array_value = ranges_array.unwrap().first();
+    if subnet_array_value.is_none() {
+        cni_error::output_error(
+            &"Cannot get first array of subnet in config file".to_string(),
+            &"".to_string(),
+            cni_error::CNIErrorCode::InvalidNetworkConfig,
+            cni_version
+        );
+        return None;
+    }
+
+    let subnet_array = subnet_array_value.unwrap().as_array();
+    if subnet_array.is_none() {
+        cni_error::output_error(
+            &"Invalid array of subnet in config file".to_string(),
+            &"".to_string(),
+            cni_error::CNIErrorCode::InvalidNetworkConfig,
+            cni_version
+        );
+        return None;
+    }
+
+    let subnet_obj = subnet_array.unwrap().first();
+    if subnet_obj.is_none() {
+        cni_error::output_error(
+            &"Cannot get subnet element object in config file".to_string(),
+            &"".to_string(),
+            cni_error::CNIErrorCode::InvalidNetworkConfig,
+            cni_version
+        );
+        return None;
+    }
+
+    let subnet = subnet_obj.unwrap().get("subnet");
+    if subnet.is_none() {
+        cni_error::output_error(
+            &"Cannot get subnet in subnet object in config file".to_string(),
+            &"".to_string(),
+            cni_error::CNIErrorCode::InvalidNetworkConfig,
+            cni_version
+        );
+        return None;
+    }
+
+    let subnet_str = subnet.unwrap().as_str();
+    if subnet_str.is_none() {
+        cni_error::output_error(
+            &"Invalid subnet string provided in config file".to_string(),
+            &"".to_string(),
+            cni_error::CNIErrorCode::InvalidNetworkConfig,
+            cni_version
+        );
+        return None;
+    }
+
+    let subnet: String = subnet_str.unwrap().to_string();
+    let from_str_result = IpNet::from_str(&subnet);
+    if let Err(error) = from_str_result {
+        cni_error::output_error(
+            &"Invalid subnet format provided in config file".to_string(),
+            &error.to_string(),
+            cni_error::CNIErrorCode::InvalidNetworkConfig,
+            cni_version
+        );
+        return None;
+    }
+
+    return Some(from_str_result.unwrap());
 }
 
 pub fn get_cni_version_from_config(config: &NetworkConfig) -> String {
