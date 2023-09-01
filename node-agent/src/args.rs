@@ -9,9 +9,6 @@ pub struct CliArguments {
     #[arg(long, default_value_t = 3, env)]
     pub lifecycle_retries: i32,
 
-    /// The port to start the node agent on.
-    #[arg(long, default_value_t = 50052, env)]
-    pub node_agent_port: u16,
 
     /// The address of the scheduler to connect the node agent to.
     #[arg(long, default_value = "[::]", env)]
@@ -20,6 +17,14 @@ pub struct CliArguments {
     /// The port of the scheduler to connect the node agent to.
     #[arg(long, default_value_t = 50051, env)]
     pub scheduler_port: u16,
+
+    /// The address of the node agent for the scheduler to connect to.
+    #[arg(long, default_value = "[::]", env)]
+    pub node_agent_address: String,
+
+    /// The port of the node agent for the scheduler to connect to.
+    #[arg(long, default_value_t = 50052, env)]
+    pub node_agent_port: u16,
 
     /// Verbosity level.
     #[command(flatten)]

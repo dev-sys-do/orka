@@ -1,15 +1,18 @@
 mod args;
 mod workload_manager;
 
+use std::process::exit;
+
 use clap::Parser;
-use orka_proto::{node_agent::Workload, scheduler_agent::{lifecycle_service_client::LifecycleServiceClient, ConnectionRequest, status_update_service_client::StatusUpdateServiceClient}};
-use tracing::{info, error};
+use orka_proto::scheduler_agent::{lifecycle_service_client::LifecycleServiceClient, ConnectionRequest, status_update_service_client::StatusUpdateServiceClient, DisconnectionNotice};
+use tokio::sync::mpsc::{Sender, Receiver, self};
+use tracing::{info, error, warn};
 use uuid::Uuid;
-use workload_manager::container::client::ContainerClient;
 use anyhow::Result;
 use tracing_log::AsTrace;
 
-use crate::{workload_manager::container::metrics::metrics::any_to_resource, args::CliArguments};
+use crate::workload_manager::grpc::server::GrpcServer;
+use crate::args::CliArguments;
 use crate::workload_manager::node::metrics::stream_node_status;
 
 async fn execute_node_lifecycle(
@@ -73,53 +76,8 @@ async fn execute_node_lifecycle(
     }
 }
 
-const CID: &str = "nginx";
-
 #[tokio::main]
 async fn main() {
-    let mut workload_manager = ContainerClient::new("/var/run/containerd/containerd.sock").await.unwrap();
-
-    let workload = Workload {
-        instance_id: CID.to_string(),
-        image: "docker.io/library/nginx:latest".to_string(),
-        environment: vec!["FOO=BAR".to_string()],
-        ..Default::default()
-    };
-
-    workload_manager.create(&workload).await.unwrap();
-
-    let response = workload_manager.info(CID).await.unwrap();
-
-    println!("{:?}", response);
-
-    let response = workload_manager.status(CID).await.unwrap();
-
-    println!("{:?}", response);
-
-    for _ in 0..10 {
-        let response = workload_manager.metrics(CID).await.unwrap();
-
-        for metric in response.into_inner().metrics {
-            let data = metric.data.unwrap();
-
-            println!("{:?}", any_to_resource(&data));
-        }
-
-        tokio::time::sleep(tokio::time::Duration::from_secs(1)).await;
-    }
-
-    let signal = 9;
-    workload_manager.kill(CID, signal).await.unwrap();
-
-    workload_manager.wait(CID).await.unwrap();
-
-    workload_manager.cleanup(CID).await.unwrap();
-
-    match workload_manager.status(CID).await {
-        Ok(_) => panic!("Workload should not exist"),
-        Err(_) => println!("Workload does not exist"),
-    };
-
     let args = CliArguments::parse();
 
     tracing_subscriber::fmt()
@@ -139,22 +97,97 @@ async fn main() {
 
     let node_id = Uuid::new_v4();
 
-    let retries = args.lifecycle_retries;
+    info!("Node ID: {}", node_id);
 
-    for _ in 0..retries {
-        match execute_node_lifecycle(
-            node_id,
-            args.node_agent_port,
-            scheduler_connection_string.clone(),
-        )
-        .await
-        {
-            Ok(_) => {
-                // will never be reached
-            }
-            Err(e) => {
-                error!("Failed to execute node lifecycle: {:?}", e);
+    let (tx, mut rx): (Sender<i32>, Receiver<i32>) = mpsc::channel(1);
+    
+    let lifecycle_tx = tx.clone();
+    let lifecycle_connection_string = scheduler_connection_string.clone();
+
+    // join scheduler and stream node status to scheduler, retrying on failure
+    tokio::spawn(async move {
+        let retries = args.lifecycle_retries;
+
+        for _ in 0..retries {
+            match execute_node_lifecycle(
+                node_id,
+                args.node_agent_port,
+                lifecycle_connection_string.clone(),
+            )
+            .await
+            {
+                Ok(_) => {
+                    // will never be reached
+                }
+                Err(e) => {
+                    error!("Failed to execute node lifecycle: {:?}", e);
+                }
             }
         }
+
+        error!("
+            Node lifecycle failed, initiating graceful shutdown"
+        );
+
+        let _ = lifecycle_tx.send(1).await;
+    });
+
+    // start grpc server
+    tokio::spawn(async move {
+        error!("Starting gRPC server on {}:{}",
+            args.node_agent_address,
+            args.node_agent_port
+        );
+
+        let grpc = GrpcServer::new(args.node_agent_address, args.node_agent_port);
+
+        let server = match grpc.map_err(|e| {
+            error!("Failed to create gRPC server: {:?}", e);
+        }) {
+            Ok(server) => server,
+            Err(e) => {
+                error!("Failed to create gRPC server: {:?}", e);
+                let _ = tx.send(1).await;
+                exit(1);
+            }
+        };
+
+        match server.start_server().await {
+            Ok(_) => {}
+            Err(e) => {
+                error!("Failed to start gRPC server: {:?}", e);
+                let _ = tx.send(1).await;
+                exit(1);
+            }
+        };
+    });
+
+    let _ = rx.recv().await;
+
+    info!("Exiting");
+
+    info!("Trying to quit cluster");
+
+    match LifecycleServiceClient::connect(scheduler_connection_string).await {
+        Err(error) => {
+            warn!("Failed connecting to scheduler when exiting {:?}", error)
+        }
+        Ok(mut client) => {
+            match client
+                .leave_cluster(DisconnectionNotice {
+                    id: node_id.to_string(),
+                })
+                .await
+            {
+                Ok(_) => {
+                    info!("Successfully left cluster")
+                }
+                Err(error) => {
+                    warn!("Failed existing cluster {:?}", error)
+                }
+            };
+        }
     }
+
+    exit(1);
 }
