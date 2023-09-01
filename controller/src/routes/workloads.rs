@@ -1,74 +1,62 @@
+use crate::errors::ApiError;
+use crate::store::kv_manager::*;
 use crate::types::workload_request::WorkloadRequest;
-use crate::{
-    client::{
-        scheduler::{
-            workload::Type,
-            SchedulingRequest, Workload,
-        },
-        Client,
-    },
-    errors::ApiError,
-};
-use axum::Json;
-use log::info;
+use axum::{extract::Path, Json};
 use serde_json::{self, json, Value};
+
+use uuid::Uuid;
+
 use validator::Validate;
-use crate::client::scheduler::workload;
 
 pub async fn get_workloads(_body: String) -> anyhow::Result<Json<Value>, ApiError> {
-    tokio::spawn(async move {
-        // TODO: Implement => retrieve list of workloads from hashmap
-    });
-    Ok(Json(json!({"workloads": "[]"})))
+    // Init the database
+    let kv_store = DB_STORE.lock().unwrap();
+
+    let workloads = kv_store.select_workloads()?;
+
+    Ok(Json(json!({ "workloads": workloads })))
 }
 
-pub async fn get_specific_workload(_body: String) -> anyhow::Result<Json<Value>, ApiError> {
-    tokio::spawn(async move {
-        // TODO: Implement => retrieve the workload needed from hashmap
-    });
-    Ok(Json(json!({"description": "A workload description file"})))
+pub async fn get_specific_workload(
+    Path(id): Path<String>,
+) -> anyhow::Result<Json<Value>, ApiError> {
+    let kv_store = DB_STORE.lock().unwrap();
+
+    let workload = kv_store.workloads_bucket()?.get(&id)?;
+
+    match workload {
+        None => Ok(Json(json!({"description": "Workload not found"}))),
+        Some(workload_description) => {
+            Ok(Json(json!({"description": workload_description.as_ref()})))
+        }
+    }
 }
 
-pub async fn delete_workload(_body: String) -> anyhow::Result<Json<Value>, ApiError> {
-    tokio::spawn(async move {
-        // TODO: Implement => remove workload from hashmap
-    });
-    Ok(Json(json!({"description": "Deleted"})))
+pub async fn delete_workload(Path(id): Path<String>) -> anyhow::Result<Json<Value>, ApiError> {
+    let kv_store = DB_STORE.lock().unwrap();
+    kv_store.workloads_bucket()?.remove(&id)?;
+    Ok(Json(json!({"description": "Workload deleted"})))
 }
 
 pub async fn post_workload(body: String) -> anyhow::Result<Json<Value>, ApiError> {
-    // We spawn a thread to handle the request
-    let mut client = Client::new().await?;
+    // Init the database
+    let kv_store = DB_STORE.lock().unwrap();
+
     // Create a new Workload Request object out of the body
     let json_body: WorkloadRequest = serde_json::from_str(&body)?;
 
     // Validate if the workload request is valid
     json_body.validate()?;
 
-    // Extract the env variable table
-    let mut environment = Vec::new();
-    if !json_body.workload.environment.is_empty() {
-        for env in json_body.workload.environment.iter() {
-            environment.push(env.clone());
-        }
-    }
+    // Generate a new uuid
+    let id_with_prefix = format!("workload-{}-{}", json_body.workload.name, Uuid::new_v4());
 
-    // Create a grpc workload object
-    let workload = Workload {
-        name: json_body.workload.name,
-        r#type: Type::Container.into(),
-        image: json_body.workload.image,
-        environment,
-        resource_limits: Some(workload::Resources::default()),
-    };
+    // Store the workload request in the database
+    kv_store
+        .workloads_bucket()?
+        .set(&id_with_prefix, &kv::Json(json_body))?;
 
-    let request = SchedulingRequest {
-        workload: Some(workload),
-    };
-
-    let response = client.schedule_workload(request).await.unwrap();
-
-    info!("RESPONSE={:?}", response);
-    // TODO: Handle the grpc response and if OK save data and send response to cli
-    Ok(Json(json!({"description": "Created"})))
+    Ok(Json(json!({
+        "Your workload is successfully created ": id_with_prefix
+    })))
 }

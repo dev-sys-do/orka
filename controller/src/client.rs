@@ -1,11 +1,9 @@
-use scheduler::scheduling_service_client::SchedulingServiceClient;
-use scheduler::SchedulingRequest;
+use orka_proto::scheduler_controller::SchedulingRequest;
+use orka_proto::scheduler_controller::{self, scheduling_service_client::SchedulingServiceClient};
 use tonic::transport::Channel;
-use log::trace;
+use tonic::Streaming;
 
-pub mod scheduler {
-    tonic::include_proto!("orkascheduler");
-}
+use orka_proto::scheduler_controller::{WorkloadInstance, WorkloadStatus};
 
 pub struct Client {
     client: SchedulingServiceClient<Channel>,
@@ -20,16 +18,29 @@ impl Client {
     pub async fn schedule_workload(
         &mut self,
         scheduling_request: SchedulingRequest,
-    ) -> Result<(), Box<dyn std::error::Error>> {
-        let request = scheduling_request;
+    ) -> Result<Streaming<WorkloadStatus>, tonic::Status> {
+        let response = self.client.schedule(scheduling_request).await?;
 
-        let response = self.client.schedule(request).await?;
+        let stream = response.into_inner();
 
-        let mut stream = response.into_inner();
+        Ok(stream)
+    }
 
-        while let Some(status) = stream.message().await? {
-            trace!("STATUS={:?}", status);
-        }
-        Ok(())
+    pub async fn stop_instance(
+        &mut self,
+        instance: WorkloadInstance,
+    ) -> Result<scheduler_controller::Empty, tonic::Status> {
+        let response = self.client.stop(instance).await?;
+
+        Ok(response.into_inner())
+    }
+
+    pub async fn destroy_instance(
+        &mut self,
+        instance: WorkloadInstance,
+    ) -> Result<scheduler_controller::Empty, tonic::Status> {
+        let response = self.client.destroy(instance).await?;
+
+        Ok(response.into_inner())
     }
 }

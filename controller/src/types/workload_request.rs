@@ -1,24 +1,30 @@
 use serde::{Deserialize, Serialize};
+use uuid::Uuid;
 use validator::{Validate, ValidationError};
 
-#[derive(Debug, Validate, Deserialize)]
+use orka_proto::scheduler_controller::{
+    self,
+    workload::{Resources, Type},
+};
+
+#[derive(Debug, Validate, Deserialize, Serialize, Clone)]
 pub struct WorkloadRequest {
     pub version: String,
     pub workload: Workload,
 }
 
-#[derive(Debug, Deserialize, Serialize)]
+#[derive(Debug, Deserialize, Serialize, Clone)]
 pub enum WorkloadKind {
     Container,
 }
 
-#[derive(Debug, Deserialize, Serialize)]
+#[derive(Debug, Deserialize, Serialize, Clone)]
 pub enum WorkloadRegistry {
     Docker,
     Podman,
     Ghcr,
 }
-#[derive(Debug, Validate, Deserialize)]
+#[derive(Debug, Validate, Deserialize, Serialize, Clone)]
 pub struct Workload {
     #[validate(custom = "validate_workload_kind")]
     pub kind: WorkloadKind,
@@ -50,5 +56,18 @@ fn validate_workload_registry(registry: &WorkloadRegistry) -> Result<(), Validat
         WorkloadRegistry::Docker => Ok(()),
         WorkloadRegistry::Podman => Ok(()),
         WorkloadRegistry::Ghcr => Ok(()),
+    }
+}
+
+impl From<Workload> for scheduler_controller::Workload {
+    fn from(workload: Workload) -> scheduler_controller::Workload {
+        // Create a grpc workload object
+        scheduler_controller::Workload {
+            instance_id: format!("instance-{}-{}", workload.name, Uuid::new_v4()),
+            r#type: Type::Container.into(),
+            image: workload.image,
+            environment: workload.environment,
+            resource_limits: Some(Resources::default()),
+        }
     }
 }

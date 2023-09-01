@@ -17,6 +17,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Workload'
+        '4XX':
+          description: Error response (e.g. yaml description file is invalid)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
     post:
       summary: Creates a workload (only container workload type for now)
       requestBody:
@@ -27,8 +33,12 @@ paths:
       responses:
         '201':
           description: Created
-        '400':
-          description: Yaml description file is invalid
+        '4XX':
+          description: Error response (e.g. yaml description file is invalid)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
   /workloads/{id}:
     get:
       summary: Returns a single workload by id.
@@ -39,11 +49,23 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Workload'
+        '4XX':
+          description: Error response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
     delete:
       summary: Deletes a workload by id
       responses:
         '204':
           description: Deleted
+        '4XX':
+          description: Error response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
     parameters:
     - name: id
       in: path
@@ -63,6 +85,12 @@ paths:
                 type: array
                 items:
                   type: string
+        '4XX':
+          description: Error response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
     post:
       summary: Creates an instance based on an existing workload id
       requestBody:
@@ -76,8 +104,12 @@ paths:
       responses:
         '201':
           description: Created
-        '400':
+        '4XX':
           description: Couldn't create an instance based on the workload file
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
   /instances/{id}:
     get:
       summary: Returns a single instance status by id.
@@ -88,11 +120,23 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/InstanceStatus'
+        '4XX':
+          description: Error response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
     delete:
       summary: Deletes an instance by id
       responses:
         '204':
           description: Deleted
+        '4XX':
+          description: Error response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
     parameters:
     - name: id
       in: path
@@ -102,6 +146,13 @@ paths:
         type: string
 components:
   schemas:
+    ErrorResponse:
+      type: object
+      properties:
+        status:
+          type: string
+        message:
+          type: string
     Workload:
       type: object
       properties:
