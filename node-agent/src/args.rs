@@ -9,6 +9,9 @@ pub struct CliArguments {
     #[arg(long, default_value_t = 3, env)]
     pub lifecycle_retries: i32,
 
+    /// Enable the orka CNI in containerd.
+    #[arg(long, default_value_t = false, env)]
+    pub cni: bool,
 
     /// The address of the scheduler to connect the node agent to.
     #[arg(long, default_value = "[::]", env)]

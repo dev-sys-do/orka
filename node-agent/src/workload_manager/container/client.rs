@@ -1,8 +1,10 @@
+use clap::Parser;
 use containerd_client::{
     connect,
     services::v1::{
-        containers_client::ContainersClient, tasks_client::TasksClient,
-        GetContainerRequest, GetContainerResponse, KillRequest, WaitRequest, WaitResponse, DeleteTaskRequest, DeleteContainerRequest, GetResponse, GetRequest, MetricsRequest, MetricsResponse,
+        containers_client::ContainersClient, tasks_client::TasksClient, DeleteContainerRequest,
+        DeleteTaskRequest, GetContainerRequest, GetContainerResponse, GetRequest, GetResponse,
+        KillRequest, MetricsRequest, MetricsResponse, WaitRequest, WaitResponse,
     },
     with_namespace,
 };
@@ -12,6 +14,7 @@ use tonic::{Request, Status};
 
 use super::error::ContainerClientError;
 
+use crate::args::CliArguments;
 use orka_proto::node_agent::Workload;
 
 const NAMESPACE: &str = "default";
@@ -172,9 +175,16 @@ impl ContainerClient {
             .iter()
             .map(|value| format!("--env={}", value));
 
+        let cni = if CliArguments::parse().cni {
+            vec!["--cni"]
+        } else {
+            vec![]
+        };
+
         // TODO - use containerd library to create container instead of ctr
         let command = Command::new("ctr")
             .arg("run")
+            .args(cni.as_slice())
             .arg("--detach")
             .args(env)
             .arg(&workload.image)

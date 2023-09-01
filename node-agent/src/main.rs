@@ -3,16 +3,20 @@ mod workload_manager;
 
 use std::process::exit;
 
-use clap::Parser;
-use orka_proto::scheduler_agent::{lifecycle_service_client::LifecycleServiceClient, ConnectionRequest, status_update_service_client::StatusUpdateServiceClient, DisconnectionNotice};
-use tokio::sync::mpsc::{Sender, Receiver, self};
-use tracing::{info, error, warn};
-use uuid::Uuid;
 use anyhow::Result;
+use clap::Parser;
+use orka_proto::scheduler_agent::{
+    lifecycle_service_client::LifecycleServiceClient,
+    status_update_service_client::StatusUpdateServiceClient, ConnectionRequest,
+    DisconnectionNotice,
+};
+use tokio::sync::mpsc::{self, Receiver, Sender};
+use tracing::{error, info, warn};
 use tracing_log::AsTrace;
+use uuid::Uuid;
 
-use crate::workload_manager::grpc::server::GrpcServer;
 use crate::args::CliArguments;
+use crate::workload_manager::grpc::server::GrpcServer;
 use crate::workload_manager::node::metrics::stream_node_status;
 
 async fn execute_node_lifecycle(
@@ -20,10 +24,7 @@ async fn execute_node_lifecycle(
     node_agent_port: u16,
     scheduler_connection_string: String,
 ) -> Result<()> {
-    info!(
-        "Connecting to scheduler on {}",
-        scheduler_connection_string
-    );
+    info!("Connecting to scheduler on {}", scheduler_connection_string);
 
     loop {
         tokio::time::sleep(tokio::time::Duration::from_secs(1)).await;
@@ -100,7 +101,7 @@ async fn main() {
     info!("Node ID: {}", node_id);
 
     let (tx, mut rx): (Sender<i32>, Receiver<i32>) = mpsc::channel(1);
-    
+
     let lifecycle_tx = tx.clone();
     let lifecycle_connection_string = scheduler_connection_string.clone();
 
@@ -125,7 +126,8 @@ async fn main() {
             }
         }
 
-        error!("
+        error!(
+            "
             Node lifecycle failed, initiating graceful shutdown"
         );
 
@@ -134,9 +136,9 @@ async fn main() {
 
     // start grpc server
     tokio::spawn(async move {
-        error!("Starting gRPC server on {}:{}",
-            args.node_agent_address,
-            args.node_agent_port
+        error!(
+            "Starting gRPC server on {}:{}",
+            args.node_agent_address, args.node_agent_port
         );
 
         let grpc = GrpcServer::new(args.node_agent_address, args.node_agent_port);
