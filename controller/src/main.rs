@@ -4,8 +4,8 @@ mod routes;
 mod store;
 mod types;
 
-use orka_proto::scheduler_controller::{self, WorkloadInstance};
 use store::kv_manager::DB_STORE;
+use orka_proto::scheduler_controller::{self, WorkloadInstance};
 use store::kv_manager::{KeyValueBatch, DB_BATCH};
 use tokio::sync::mpsc;
 use tokio_stream::wrappers::ReceiverStream;

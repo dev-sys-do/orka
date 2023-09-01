@@ -7,7 +7,7 @@ use crate::types::instance_request::InstanceRequest;
 use crate::types::instance_status::InstanceStatus;
 use axum::extract::Path;
 use axum::Json;
-use log::{error, trace, warn};
+use log::{trace, warn, error};
 use orka_proto::scheduler_controller::{SchedulingRequest, Workload, WorkloadInstance};
 use serde_json::{self, json, Value};
 use validator::Validate;
