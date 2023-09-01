@@ -2,7 +2,7 @@ use containerd_client::{
     connect,
     services::v1::{
         containers_client::ContainersClient, tasks_client::TasksClient,
-        GetContainerRequest, GetContainerResponse, KillRequest, WaitRequest, WaitResponse, DeleteTaskRequest, DeleteContainerRequest, GetResponse, GetRequest,
+        GetContainerRequest, GetContainerResponse, KillRequest, WaitRequest, WaitResponse, DeleteTaskRequest, DeleteContainerRequest, GetResponse, GetRequest, MetricsRequest, MetricsResponse,
     },
     with_namespace,
 };
@@ -91,6 +91,26 @@ impl ContainerClient {
 
         let response = client
             .get(request)
+            .await
+            .map_err(|status| ContainerClientError::GRPCError { status })?;
+
+        Ok(response)
+    }
+
+    pub async fn metrics(
+        &mut self,
+        container_id: &str,
+    ) -> Result<Response<MetricsResponse>, ContainerClientError> {
+        let request = MetricsRequest {
+            filters: vec![format!("id=={}", container_id)],
+        };
+
+        let request = with_namespace!(request, NAMESPACE);
+
+        let mut client = self.get_task_client().await?;
+
+        let response = client
+            .metrics(request)
             .await
             .map_err(|status| ContainerClientError::GRPCError { status })?;
 
