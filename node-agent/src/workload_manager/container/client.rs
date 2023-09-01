@@ -2,7 +2,7 @@ use containerd_client::{
     connect,
     services::v1::{
         containers_client::ContainersClient, tasks_client::TasksClient,
-        GetContainerRequest, GetContainerResponse,
+        GetContainerRequest, GetContainerResponse, KillRequest, WaitRequest, WaitResponse, DeleteTaskRequest, DeleteContainerRequest, GetResponse, GetRequest,
     },
     with_namespace,
 };
@@ -54,6 +54,27 @@ impl ContainerClient {
         Ok(Self {
             sock_path: sock_path.to_string(),
         })
+    }
+
+    pub async fn status(
+        &mut self,
+        container_id: &str,
+    ) -> Result<Response<GetResponse>, ContainerClientError> {
+        let request = GetRequest {
+            container_id: container_id.to_string(),
+            ..Default::default()
+        };
+
+        let request = with_namespace!(request, NAMESPACE);
+
+        let mut client = self.get_task_client().await?;
+
+        let response = client
+            .get(request)
+            .await
+            .map_err(|status| ContainerClientError::GRPCError { status })?;
+
+        Ok(response)
     }
 
     pub async fn info(
@@ -156,5 +177,75 @@ impl ContainerClient {
         Ok(Response::new(CreateContainerResponse {
             container_id: workload.instance_id.to_string(),
         }))
+    }
+
+    pub async fn cleanup(&mut self, id: &str) -> Result<Response<()>, ContainerClientError> {
+        let request = DeleteTaskRequest {
+            container_id: id.to_string(),
+        };
+
+        let request = with_namespace!(request, NAMESPACE);
+
+        let mut task_client = self.get_task_client().await?;
+
+        let _ = task_client
+            .delete(request)
+            .await
+            .map_err(|status| ContainerClientError::GRPCError { status })?;
+
+        let request = DeleteContainerRequest { id: id.to_string() };
+
+        let request = with_namespace!(request, NAMESPACE);
+
+        let mut container_client = self.get_client().await?;
+
+        let _ = container_client
+            .delete(request)
+            .await
+            .map_err(|status| ContainerClientError::GRPCError { status })?;
+
+        Ok(Response::new(()))
+    }
+
+    pub async fn kill(
+        &mut self,
+        id: &str,
+        signal: u32,
+    ) -> Result<Response<()>, ContainerClientError> {
+        let request = KillRequest {
+            container_id: id.to_string(),
+            signal,
+            all: true,
+            ..Default::default()
+        };
+
+        let request = with_namespace!(request, NAMESPACE);
+
+        let mut task_client = self.get_task_client().await?;
+
+        let response = task_client
+            .kill(request)
+            .await
+            .map_err(|status| ContainerClientError::GRPCError { status })?;
+
+        Ok(response)
+    }
+
+    pub async fn wait(&mut self, id: &str) -> Result<Response<WaitResponse>, ContainerClientError> {
+        let request = WaitRequest {
+            container_id: id.to_string(),
+            ..Default::default()
+        };
+
+        let request = with_namespace!(request, NAMESPACE);
+
+        let mut client = self.get_task_client().await?;
+
+        let response = client
+            .wait(request)
+            .await
+            .map_err(|status| ContainerClientError::GRPCError { status })?;
+
+        Ok(response)
     }
 }
